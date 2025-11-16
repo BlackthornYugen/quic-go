@@ -28,6 +28,8 @@ const usage = `Usage of go-httpbin:
     	Host to listen on (default "0.0.0.0")
   -http3
     	Enable HTTP/3 support (requires https-cert-file and https-key-file)
+  -http3-alt-svc-port int
+    	Port to advertise in Alt-Svc header (defaults to HTTPS port)
   -https-cert-file string
     	HTTPS Server certificate file
   -https-key-file string
