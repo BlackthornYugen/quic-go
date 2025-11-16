@@ -167,7 +167,7 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 					}
 					qlogURL := publicPrefix + stats.QLogFilename
 					// Generate qvis link
-					info.QLogVisualizationLink = "https://qvis.quictools.info/?file=" + url.QueryEscape(qlogURL) + "#/sequence?file=" + url.QueryEscape(qlogURL)
+					info.QLogVisualizationLink = "https://qvis.quictools.info/#/sequence?file=" + url.QueryEscape(qlogURL)
 				}
 			}
 		}
