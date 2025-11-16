@@ -2,6 +2,57 @@
 let testInProgress = false;
 
 /**
+ * Load settings from URL query parameters
+ */
+function loadSettingsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.has('count')) {
+        document.getElementById('requestCount').value = params.get('count');
+    }
+    if (params.has('delay')) {
+        document.getElementById('requestDelay').value = params.get('delay');
+    }
+    if (params.has('delayInc')) {
+        document.getElementById('delayIncrement').value = params.get('delayInc');
+    }
+    if (params.has('endpoint')) {
+        const value = params.get('endpoint');
+        document.getElementById('endpointDelay').value = value;
+        document.getElementById('endpointDelayValue').textContent = value;
+    }
+    if (params.has('endpointInc')) {
+        document.getElementById('endpointDelayIncrement').value = params.get('endpointInc');
+    }
+}
+
+/**
+ * Update URL with current settings
+ */
+function updateURL() {
+    const params = new URLSearchParams();
+    
+    const requestCount = document.getElementById('requestCount').value;
+    const requestDelay = document.getElementById('requestDelay').value;
+    const delayIncrement = document.getElementById('delayIncrement').value;
+    const endpointDelay = document.getElementById('endpointDelay').value;
+    const endpointDelayIncrement = document.getElementById('endpointDelayIncrement').value;
+    
+    // Only add non-default values to keep URL clean
+    if (requestCount !== '5') params.set('count', requestCount);
+    if (requestDelay !== '20') params.set('delay', requestDelay);
+    if (delayIncrement !== '0') params.set('delayInc', delayIncrement);
+    if (endpointDelay !== '10') params.set('endpoint', endpointDelay);
+    if (endpointDelayIncrement !== '0') params.set('endpointInc', endpointDelayIncrement);
+    
+    const queryString = params.toString();
+    const newURL = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+    
+    // Update URL without reloading page
+    window.history.replaceState({}, '', newURL);
+}
+
+/**
  * Formats bytes to human-readable format
  */
 function formatBytes(bytes) {
@@ -244,21 +295,42 @@ async function startTest() {
 
 // Allow Enter key to start test
 document.addEventListener('DOMContentLoaded', function() {
+    // Load settings from URL on page load
+    loadSettingsFromURL();
+    
     const handleEnter = function(e) {
         if (e.key === 'Enter') {
             startTest();
         }
     };
     
-    document.getElementById('requestCount').addEventListener('keypress', handleEnter);
-    document.getElementById('requestDelay').addEventListener('keypress', handleEnter);
-    document.getElementById('delayIncrement').addEventListener('keypress', handleEnter);
-    document.getElementById('endpointDelayIncrement').addEventListener('keypress', handleEnter);
+    // Update URL when any input changes
+    const updateOnChange = function() {
+        updateURL();
+    };
+    
+    const requestCountInput = document.getElementById('requestCount');
+    const requestDelayInput = document.getElementById('requestDelay');
+    const delayIncrementInput = document.getElementById('delayIncrement');
+    const endpointDelaySlider = document.getElementById('endpointDelay');
+    const endpointDelayIncrementInput = document.getElementById('endpointDelayIncrement');
+    const endpointDelayValue = document.getElementById('endpointDelayValue');
+    
+    requestCountInput.addEventListener('keypress', handleEnter);
+    requestCountInput.addEventListener('input', updateOnChange);
+    
+    requestDelayInput.addEventListener('keypress', handleEnter);
+    requestDelayInput.addEventListener('input', updateOnChange);
+    
+    delayIncrementInput.addEventListener('keypress', handleEnter);
+    delayIncrementInput.addEventListener('input', updateOnChange);
+    
+    endpointDelayIncrementInput.addEventListener('keypress', handleEnter);
+    endpointDelayIncrementInput.addEventListener('input', updateOnChange);
     
     // Update endpoint delay display when slider changes
-    const endpointDelaySlider = document.getElementById('endpointDelay');
-    const endpointDelayValue = document.getElementById('endpointDelayValue');
     endpointDelaySlider.addEventListener('input', function() {
         endpointDelayValue.textContent = this.value;
+        updateOnChange();
     });
 });
