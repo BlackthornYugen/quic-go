@@ -133,6 +133,8 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 		return nil
 	}
 	
+	fmt.Printf("DEBUG getHTTP3InfoFromWriter: HTTP/3 request detected, Proto=%s\n", r.Proto)
+	
 	info := &HTTP3Info{
 		Protocol:       r.Proto,
 		DroppedPackets: 0,
@@ -141,6 +143,7 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 	
 	// Try to get stats from the global stats provider
 	if globalStatsProvider != nil {
+		fmt.Printf("DEBUG getHTTP3InfoFromWriter: globalStatsProvider is set\n")
 		if stats := globalStatsProvider.GetHTTP3Stats(r, w); stats != nil {
 			info.RTT = stats.RTT.String()
 			info.DroppedPackets = stats.DroppedPackets

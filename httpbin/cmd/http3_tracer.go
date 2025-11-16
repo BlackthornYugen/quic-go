@@ -7,11 +7,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3"
 	"github.com/quic-go/quic-go/qlogwriter"
 
 	"github.com/mccutchen/go-httpbin/v2/httpbin"
@@ -308,81 +308,79 @@ func (r *statsRecorder) Close() error {
 
 // GetHTTP3Stats implements httpbin.HTTP3StatsProvider
 func (t *ConnectionStatsTracker) GetHTTP3Stats(r *http.Request, w http.ResponseWriter) *httpbin.HTTP3Stats {
-	// Try to get the connection from the ResponseWriter
-	if hijacker, ok := w.(http3.Hijacker); ok {
-		conn := hijacker.Connection()
-		if conn != nil {
-			// We need to find stats for this connection
-			// The problem is that we stored stats by QUIC connection ID,
-			// but here we only have access to the remote address
-			
-			// First, try to update stats based on current connection
-			remoteAddr := conn.RemoteAddr().String()
-			
-			// Look through all stored stats to find a match by remote address
-			// or return the first/most recent connection stats as a fallback
-			t.mu.RLock()
-			var bestMatch *ConnectionStats
-			var bestMatchConnID string
-			now := time.Now()
-			
-			for connID, stats := range t.stats {
-				// If we find an exact match by remote address, use it
-				if connID == remoteAddr {
-					bestMatch = stats
-					bestMatchConnID = connID
-					break
-				}
-				// Otherwise, keep track of the most recently updated stats
-				if bestMatch == nil || stats.LastUpdate.After(bestMatch.LastUpdate) {
-					// Only consider recent connections (within last 10 seconds)
-					if now.Sub(stats.LastUpdate) < 10*time.Second {
-						bestMatch = stats
-						bestMatchConnID = connID
-					}
-				}
-			}
-			
-			// Get the qlog filename if available
-			var qlogFilename string
-			if bestMatchConnID != "" {
-				qlogFilename = t.connIDToFilename[bestMatchConnID]
-			}
-			t.mu.RUnlock()
-			
-			// If we found stats, also try updating with the remote address key
-			if bestMatch != nil {
-				// Copy stats to remote address key for future lookups
-				t.UpdateStats(remoteAddr, func(stats *ConnectionStats) {
-					stats.RTT = bestMatch.RTT
-					stats.DroppedPackets = bestMatch.DroppedPackets
-					stats.PacketsSent = bestMatch.PacketsSent
-					stats.PacketsLost = bestMatch.PacketsLost
-					stats.BytesSent = bestMatch.BytesSent
-					stats.BytesReceived = bestMatch.BytesReceived
-				})
-				
-				// Also store the filename mapping for the remote address
-				if qlogFilename != "" {
-					t.mu.Lock()
-					t.connIDToFilename[remoteAddr] = qlogFilename
-					t.mu.Unlock()
-				}
-				
-				statsCopy := *bestMatch
-				return &httpbin.HTTP3Stats{
-					RTT:            statsCopy.RTT,
-					DroppedPackets: statsCopy.DroppedPackets,
-					PacketsSent:    statsCopy.PacketsSent,
-					PacketsLost:    statsCopy.PacketsLost,
-					BytesSent:      statsCopy.BytesSent,
-					BytesReceived:  statsCopy.BytesReceived,
-					QLogFilename:   qlogFilename,
-				}
+	// Since we can't reliably cast the ResponseWriter to http3.Hijacker (middleware wrapping),
+	// we'll use the remote address from the request to look up stats
+	remoteAddr := r.RemoteAddr
+	fmt.Printf("DEBUG GetHTTP3Stats: called, remoteAddr=%s\n", remoteAddr)
+	
+	t.mu.RLock()
+	fmt.Printf("DEBUG: Number of stats entries: %d\n", len(t.stats))
+	fmt.Printf("DEBUG: Number of filename mappings: %d\n", len(t.connIDToFilename))
+	
+	var bestMatch *ConnectionStats
+	var bestMatchConnID string
+	now := time.Now()
+	
+	for connID, stats := range t.stats {
+		fmt.Printf("DEBUG: Checking connID=%s, lastUpdate=%v, age=%v\n", connID, stats.LastUpdate, now.Sub(stats.LastUpdate))
+		// If we find an exact match by remote address, use it
+		if strings.Contains(remoteAddr, connID) || strings.Contains(connID, remoteAddr) {
+			bestMatch = stats
+			bestMatchConnID = connID
+			fmt.Printf("DEBUG: Found match by address similarity\n")
+			break
+		}
+		// Otherwise, keep track of the most recently updated stats
+		if bestMatch == nil || stats.LastUpdate.After(bestMatch.LastUpdate) {
+			// Only consider recent connections (within last 10 seconds)
+			if now.Sub(stats.LastUpdate) < 10*time.Second {
+				bestMatch = stats
+				bestMatchConnID = connID
+				fmt.Printf("DEBUG: Using recent stats from connID=%s\n", connID)
 			}
 		}
 	}
 	
+	// Get the qlog filename if available
+	var qlogFilename string
+	if bestMatchConnID != "" {
+		qlogFilename = t.connIDToFilename[bestMatchConnID]
+		fmt.Printf("DEBUG: bestMatchConnID=%s, qlogFilename=%s\n", bestMatchConnID, qlogFilename)
+	}
+	t.mu.RUnlock()
+	
+	// If we found stats, also try updating with the remote address key
+	if bestMatch != nil {
+		// Copy stats to remote address key for future lookups
+		t.UpdateStats(remoteAddr, func(stats *ConnectionStats) {
+			stats.RTT = bestMatch.RTT
+			stats.DroppedPackets = bestMatch.DroppedPackets
+			stats.PacketsSent = bestMatch.PacketsSent
+			stats.PacketsLost = bestMatch.PacketsLost
+			stats.BytesSent = bestMatch.BytesSent
+			stats.BytesReceived = bestMatch.BytesReceived
+		})
+		
+		// Also store the filename mapping for the remote address
+		if qlogFilename != "" {
+			t.mu.Lock()
+			t.connIDToFilename[remoteAddr] = qlogFilename
+			t.mu.Unlock()
+		}
+		
+		statsCopy := *bestMatch
+		return &httpbin.HTTP3Stats{
+			RTT:            statsCopy.RTT,
+			DroppedPackets: statsCopy.DroppedPackets,
+			PacketsSent:    statsCopy.PacketsSent,
+			PacketsLost:    statsCopy.PacketsLost,
+			BytesSent:      statsCopy.BytesSent,
+			BytesReceived:  statsCopy.BytesReceived,
+			QLogFilename:   qlogFilename,
+		}
+	}
+	
+	fmt.Printf("DEBUG GetHTTP3Stats: no stats found\n")
 	return nil
 }
 
