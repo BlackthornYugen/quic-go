@@ -28,6 +28,8 @@ qlog:
   hostPath: /home/jsteel/www_root/jsteelkw.ca/qlogs
   # Container mount path for qlog files
   mountPath: /qlogs
+  # Public URL prefix for qlog files (enables qvis visualization links)
+  publicPrefix: https://jsteelkw.ca/qlogs/
 
 # Mount certificates from host
 volumes:

@@ -153,6 +153,20 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 					info.CongestionWindow = stats.BytesSent
 				}
 			}
+			
+			// Generate qvis visualization link if qlog is enabled
+			if stats.QLogFilename != "" {
+				publicPrefix := globalStatsProvider.GetQLogPublicPrefix()
+				if publicPrefix != "" {
+					// Ensure publicPrefix ends with /
+					if publicPrefix[len(publicPrefix)-1] != '/' {
+						publicPrefix += "/"
+					}
+					qlogURL := publicPrefix + stats.QLogFilename
+					// Generate qvis link
+					info.QLogVisualizationLink = "https://qvis.quictools.info/?file=" + url.QueryEscape(qlogURL) + "#/sequence?file=" + url.QueryEscape(qlogURL)
+				}
+			}
 		}
 	}
 	

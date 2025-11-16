@@ -167,6 +167,7 @@ type config struct {
 	EnableHTTP3            bool
 	HTTP3AltSvcPort        int
 	QLogDir                string
+	QLogPublicPrefix       string
 	LogFormat              string
 	SrvMaxHeaderBytes      int
 	SrvReadHeaderTimeout   time.Duration
@@ -219,6 +220,7 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	fs.BoolVar(&cfg.EnableHTTP3, "http3", false, "Enable HTTP/3 support (requires https-cert-file and https-key-file)")
 	fs.IntVar(&cfg.HTTP3AltSvcPort, "http3-alt-svc-port", 0, "Port to advertise in Alt-Svc header (defaults to HTTPS port)")
 	fs.StringVar(&cfg.QLogDir, "qlog-dir", "", "Directory to save qlog files for HTTP/3 connections (enables connection tracing)")
+	fs.StringVar(&cfg.QLogPublicPrefix, "qlog-public-prefix", "", "Public URL prefix for qlog files (e.g., https://example.com/qlogs/)")
 	fs.StringVar(&cfg.ExcludeHeaders, "exclude-headers", "", "Drop platform-specific headers. Comma-separated list of headers key to drop, supporting wildcard matching.")
 	fs.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "Log format (text or json)")
 	fs.IntVar(&cfg.SrvMaxHeaderBytes, "srv-max-header-bytes", defaultSrvMaxHeaderBytes, "Value to use for the http.Server's MaxHeaderBytes option")
@@ -325,6 +327,9 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	if cfg.QLogDir == "" && getEnvVal("QLOG_DIR") != "" {
 		cfg.QLogDir = getEnvVal("QLOG_DIR")
 	}
+	if cfg.QLogPublicPrefix == "" && getEnvVal("QLOG_PUBLIC_PREFIX") != "" {
+		cfg.QLogPublicPrefix = getEnvVal("QLOG_PUBLIC_PREFIX")
+	}
 	if cfg.EnableHTTP3 {
 		if cfg.TLSCertFile == "" || cfg.TLSKeyFile == "" {
 			// Disable HTTP3 if TLS is not configured
@@ -430,11 +435,15 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 		// Initialize the stats tracker
 		var err error
 		if cfg.QLogDir != "" {
-			statsTracker, err = NewConnectionStatsTrackerWithQLog(cfg.QLogDir)
+			statsTracker, err = NewConnectionStatsTrackerWithQLog(cfg.QLogDir, cfg.QLogPublicPrefix)
 			if err != nil {
 				return fmt.Errorf("failed to initialize qlog directory: %w", err)
 			}
-			logger.Info("qlog file output enabled", "qlog_dir", cfg.QLogDir)
+			if cfg.QLogPublicPrefix != "" {
+				logger.Info("qlog file output enabled", "qlog_dir", cfg.QLogDir, "qlog_public_prefix", cfg.QLogPublicPrefix)
+			} else {
+				logger.Info("qlog file output enabled", "qlog_dir", cfg.QLogDir)
+			}
 		} else {
 			statsTracker = NewConnectionStatsTracker()
 		}

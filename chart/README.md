@@ -67,6 +67,7 @@ helm install go-httpbin ./chart -f custom-values.yaml
 | `https.keyFile` | Path to TLS key file | `/certs/key.pem` |
 | `qlog.hostPath` | Host path for qlog files (enables qlog if set) | `""` |
 | `qlog.mountPath` | Container mount path for qlog files | `/qlogs` |
+| `qlog.publicPrefix` | Public URL prefix for qlog files (e.g., `https://example.com/qlogs/`) | `""` |
 | `hostNetwork.hostIP` | Bind to specific node IP | `""` |
 | `hostNetwork.useHostPort` | Use hostPort for direct node binding | `false` |
 | `hostNetwork.ports.http` | Host port for HTTP | `80` |
@@ -145,6 +146,19 @@ helm install go-httpbin ./chart -f custom-values.yaml
 ### QLOG Support
 
 QLOG provides detailed HTTP/3 connection tracing for debugging and analysis. The qlog host path directory must exist and be writable by the container. QLOG files will be created for each HTTP/3 connection and can be analyzed using tools like [qvis](https://qvis.quictools.info/).
+
+When `qlog.publicPrefix` is configured, JSON responses will include a `qlog_visualization_link` field in the `http3` data that points to qvis with the qlog file pre-loaded. For example:
+
+```json
+{
+  "http3": {
+    "protocol": "HTTP/3.0",
+    "rtt": "25ms",
+    "dropped_packets": 0,
+    "qlog_visualization_link": "https://qvis.quictools.info/?file=https://jsteelkw.ca/qlogs/e3788a33642554b4_server.sqlog#/sequence?file=https%3A%2F%2Fjsteelkw.ca%2Fqlogs%2Fe3788a33642554b4_server.sqlog"
+  }
+}
+```
 
 ## Service Ports
 

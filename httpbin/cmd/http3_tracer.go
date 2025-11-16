@@ -56,29 +56,36 @@ type ConnectionStatsTracker struct {
 	stats map[string]*ConnectionStats
 	// Map from remote address to connection ID for easier lookup
 	addrToConnID map[string]string
+	// Map from connection ID to qlog filename
+	connIDToFilename map[string]string
 	// Optional directory to save qlog files
 	qlogDir string
+	// Optional public URL prefix for qlog files (e.g., "https://jsteelkw.ca/qlogs/")
+	qlogPublicPrefix string
 }
 
 // NewConnectionStatsTracker creates a new connection stats tracker
 func NewConnectionStatsTracker() *ConnectionStatsTracker {
 	return &ConnectionStatsTracker{
-		stats:        make(map[string]*ConnectionStats),
-		addrToConnID: make(map[string]string),
+		stats:            make(map[string]*ConnectionStats),
+		addrToConnID:     make(map[string]string),
+		connIDToFilename: make(map[string]string),
 	}
 }
 
 // NewConnectionStatsTrackerWithQLog creates a new connection stats tracker with qlog file output
-func NewConnectionStatsTrackerWithQLog(qlogDir string) (*ConnectionStatsTracker, error) {
+func NewConnectionStatsTrackerWithQLog(qlogDir string, qlogPublicPrefix string) (*ConnectionStatsTracker, error) {
 	// Ensure directory exists
 	if err := os.MkdirAll(qlogDir, 0755); err != nil {
 		return nil, err
 	}
 	
 	return &ConnectionStatsTracker{
-		stats:        make(map[string]*ConnectionStats),
-		addrToConnID: make(map[string]string),
-		qlogDir:      qlogDir,
+		stats:            make(map[string]*ConnectionStats),
+		addrToConnID:     make(map[string]string),
+		connIDToFilename: make(map[string]string),
+		qlogDir:          qlogDir,
+		qlogPublicPrefix: qlogPublicPrefix,
 	}, nil
 }
 
@@ -154,7 +161,8 @@ func (t *ConnectionStatsTracker) TracerForConnection(ctx context.Context, isClie
 		if isClient {
 			label = "client"
 		}
-		path := fmt.Sprintf("%s/%s_%s.sqlog", t.qlogDir, connID, label)
+		filename := fmt.Sprintf("%s_%s.sqlog", connID, label)
+		path := fmt.Sprintf("%s/%s", t.qlogDir, filename)
 		f, err := os.Create(path)
 		if err == nil {
 			fileSeq := qlogwriter.NewConnectionFileSeq(
@@ -165,6 +173,11 @@ func (t *ConnectionStatsTracker) TracerForConnection(ctx context.Context, isClie
 			)
 			go fileSeq.Run()
 			trace.fileTrace = fileSeq
+			
+			// Store the filename for this connection
+			t.mu.Lock()
+			t.connIDToFilename[connIDStr] = filename
+			t.mu.Unlock()
 		}
 	}
 	
@@ -310,12 +323,14 @@ func (t *ConnectionStatsTracker) GetHTTP3Stats(r *http.Request, w http.ResponseW
 			// or return the first/most recent connection stats as a fallback
 			t.mu.RLock()
 			var bestMatch *ConnectionStats
+			var bestMatchConnID string
 			now := time.Now()
 			
 			for connID, stats := range t.stats {
 				// If we find an exact match by remote address, use it
 				if connID == remoteAddr {
 					bestMatch = stats
+					bestMatchConnID = connID
 					break
 				}
 				// Otherwise, keep track of the most recently updated stats
@@ -323,8 +338,15 @@ func (t *ConnectionStatsTracker) GetHTTP3Stats(r *http.Request, w http.ResponseW
 					// Only consider recent connections (within last 10 seconds)
 					if now.Sub(stats.LastUpdate) < 10*time.Second {
 						bestMatch = stats
+						bestMatchConnID = connID
 					}
 				}
+			}
+			
+			// Get the qlog filename if available
+			var qlogFilename string
+			if bestMatchConnID != "" {
+				qlogFilename = t.connIDToFilename[bestMatchConnID]
 			}
 			t.mu.RUnlock()
 			
@@ -340,6 +362,13 @@ func (t *ConnectionStatsTracker) GetHTTP3Stats(r *http.Request, w http.ResponseW
 					stats.BytesReceived = bestMatch.BytesReceived
 				})
 				
+				// Also store the filename mapping for the remote address
+				if qlogFilename != "" {
+					t.mu.Lock()
+					t.connIDToFilename[remoteAddr] = qlogFilename
+					t.mu.Unlock()
+				}
+				
 				statsCopy := *bestMatch
 				return &httpbin.HTTP3Stats{
 					RTT:            statsCopy.RTT,
@@ -348,10 +377,16 @@ func (t *ConnectionStatsTracker) GetHTTP3Stats(r *http.Request, w http.ResponseW
 					PacketsLost:    statsCopy.PacketsLost,
 					BytesSent:      statsCopy.BytesSent,
 					BytesReceived:  statsCopy.BytesReceived,
+					QLogFilename:   qlogFilename,
 				}
 			}
 		}
 	}
 	
 	return nil
+}
+
+// GetQLogPublicPrefix implements httpbin.HTTP3StatsProvider
+func (t *ConnectionStatsTracker) GetQLogPublicPrefix() string {
+	return t.qlogPublicPrefix
 }

@@ -49,6 +49,10 @@ spec:
         - name: QLOG_DIR
           value: {{ .Values.qlog.mountPath | quote }}
         {{- end }}
+        {{- if .Values.qlog.publicPrefix }}
+        - name: QLOG_PUBLIC_PREFIX
+          value: {{ .Values.qlog.publicPrefix | quote }}
+        {{- end }}
         {{- range .Values.env }}
         - name: {{ .name }}
           value: {{ .value | quote }}

@@ -57,6 +57,7 @@ helm upgrade --install go-httpbin ./chart \
   --set podSecurityContext.runAsGroup=1000 \
   --set podSecurityContext.fsGroup=1000 \
   --set qlog.hostPath=/home/jsteel/www_root/jsteelkw.ca/qlogs \
+  --set qlog.publicPrefix=https://jsteelkw.ca/qlogs/ \
   --set-json 'env=[{"name":"HTTP3","value":"true"},{"name":"HTTP3_ALT_SVC_PORT","value":"443"}]' \
   --set-json 'volumes=[{"name":"certs","hostPath":{"path":"/home/jsteel/haproxy.secrets/var/lib/haproxy","type":"Directory"}}]' \
   --set-json 'volumeMounts=[{"name":"certs","mountPath":"/certs","readOnly":true}]'

@@ -102,6 +102,9 @@ qlog:
   hostPath: ""
   # Container mount path for qlog files
   mountPath: /qlogs
+  # Public URL prefix for qlog files (e.g., https://jsteelkw.ca/qlogs/)
+  # If set, JSON responses will include qvis visualization links
+  publicPrefix: ""
 
 # Volume mounts
 volumes: []
