@@ -29,11 +29,37 @@ $ docker run -P ghcr.io/mccutchen/go-httpbin
 
 ### Kubernetes
 
+#### Using kustomize
+
 ```
 $ kubectl apply -k github.com/mccutchen/go-httpbin/kustomize
 ```
 
 See `./kustomize` directory for further information
+
+#### Using Helm
+
+See `./chart` directory for the Helm chart and full documentation.
+
+Basic installation:
+```bash
+$ helm install go-httpbin ./chart
+```
+
+Example with custom image and HTTPS on specific host IP:
+```bash
+helm upgrade --install go-httpbin ./chart \
+  --set image.name="docker.io/library/go-httpbin:http3" \
+  --set hostNetwork.hostIP="51.222.234.166" \
+  --set hostNetwork.useHostPort=true \
+  --set httpsEnabled=true \
+  --set podSecurityContext.runAsUser=1000 \
+  --set podSecurityContext.runAsGroup=1000 \
+  --set podSecurityContext.fsGroup=1000 \
+  --set-json 'env=[{"name":"HTTP3","value":"true"}]' \
+  --set-json 'volumes=[{"name":"certs","hostPath":{"path":"/home/jsteel/haproxy.secrets/var/lib/haproxy","type":"Directory"}}]' \
+  --set-json 'volumeMounts=[{"name":"certs","mountPath":"/certs","readOnly":true}]'
+```
 
 ### Standalone binary
 
@@ -51,6 +77,9 @@ $ openssl genrsa -out server.key 2048
 $ openssl ecparam -genkey -name secp384r1 -out server.key
 $ openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
 $ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8081 -https-cert-file ./server.crt -https-key-file ./server.key
+
+# Run https server with HTTP/3 enabled
+$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8443 -https-cert-file ./server.crt -https-key-file ./server.key -http3
 ```
 
 ### Unit testing helper library
@@ -106,6 +135,7 @@ variables (or a combination of the two):
 | `-host` | `HOST` | Host to listen on | "0.0.0.0" |
 | `-https-cert-file` | `HTTPS_CERT_FILE` | HTTPS Server certificate file | |
 | `-https-key-file` | `HTTPS_KEY_FILE` | HTTPS Server private key file | |
+| `-http3` | `HTTP3` | Enable HTTP/3 support (requires https-cert-file and https-key-file) | false |
 | `-log-format` | `LOG_FORMAT` | Log format (text or json) | "text" |
 | `-max-body-size` | `MAX_BODY_SIZE` | Maximum size of request or response, in bytes | 1048576 |
 | `-max-duration` | `MAX_DURATION` | Maximum duration a response may take | 10s |

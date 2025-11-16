@@ -28,15 +28,18 @@ spec:
       - name: {{ .Chart.Name }}
         securityContext:
           {{- toYaml .Values.securityContext | nindent 12 }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.name | default (printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion)) }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         {{- with .Values.args }}
         args:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- with .Values.env }}
+        {{- if .Values.env }}
         env:
-          {{- toYaml . | nindent 10 }}
+        {{- range .Values.env }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
         {{- end }}
         ports:
         - name: http

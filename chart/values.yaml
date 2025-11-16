@@ -40,6 +40,9 @@ hostNetwork:
     quic: 443
 
 image:
+  # Full image name (overrides repository and tag if set)
+  # Example: "docker.io/library/go-httpbin:http3"
+  name: ""
   repository: mccutchen/go-httpbin
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.

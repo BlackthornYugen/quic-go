@@ -32,7 +32,7 @@ spec:
       - name: {{ .Chart.Name }}
         securityContext:
           {{- toYaml .Values.securityContext | nindent 12 }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.name | default (printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion)) }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         {{- with .Values.args }}
         args:
@@ -45,8 +45,9 @@ spec:
           value: {{ .Values.https.certFile | quote }}
         - name: HTTPS_KEY_FILE
           value: {{ .Values.https.keyFile | quote }}
-        {{- with .Values.env }}
-          {{- toYaml . | nindent 10 }}
+        {{- range .Values.env }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
         {{- end }}
         ports:
         - name: https

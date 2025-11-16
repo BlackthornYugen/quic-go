@@ -15,10 +15,12 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/mccutchen/go-httpbin/v2/httpbin"
+	"github.com/quic-go/quic-go/http3"
 )
 
 const (
@@ -126,6 +128,7 @@ type config struct {
 	RealHostname           string
 	TLSCertFile            string
 	TLSKeyFile             string
+	EnableHTTP3            bool
 	LogFormat              string
 	SrvMaxHeaderBytes      int
 	SrvReadHeaderTimeout   time.Duration
@@ -174,6 +177,7 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	fs.StringVar(&cfg.Prefix, "prefix", "", "Path prefix (empty or start with slash and does not end with slash)")
 	fs.StringVar(&cfg.TLSCertFile, "https-cert-file", "", "HTTPS Server certificate file")
 	fs.StringVar(&cfg.TLSKeyFile, "https-key-file", "", "HTTPS Server private key file")
+	fs.BoolVar(&cfg.EnableHTTP3, "http3", false, "Enable HTTP/3 support (requires https-cert-file and https-key-file)")
 	fs.StringVar(&cfg.ExcludeHeaders, "exclude-headers", "", "Drop platform-specific headers. Comma-separated list of headers key to drop, supporting wildcard matching.")
 	fs.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "Log format (text or json)")
 	fs.IntVar(&cfg.SrvMaxHeaderBytes, "srv-max-header-bytes", defaultSrvMaxHeaderBytes, "Value to use for the http.Server's MaxHeaderBytes option")
@@ -266,6 +270,15 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 			return nil, configErr("https cert and key must both be provided")
 		}
 	}
+
+	if !cfg.EnableHTTP3 && getEnvBool(getEnvVal("HTTP3")) {
+		cfg.EnableHTTP3 = true
+	}
+	if cfg.EnableHTTP3 {
+		if cfg.TLSCertFile == "" || cfg.TLSKeyFile == "" {
+			return nil, configErr("http3 requires https-cert-file and https-key-file to be set")
+		}
+	}
 	if cfg.LogFormat == defaultLogFormat && getEnvVal("LOG_FORMAT") != "" {
 		cfg.LogFormat = getEnvVal("LOG_FORMAT")
 	}
@@ -340,8 +353,46 @@ func getEnvBool(val string) bool {
 }
 
 func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger) error {
-	doneCh := make(chan error, 1)
+	var wg sync.WaitGroup
+	errCh := make(chan error, 2)
+	doneCh := make(chan struct{})
 
+	// Start HTTP/3 server if configured (on same port as HTTPS)
+	var http3Server *http3.Server
+	if cfg.EnableHTTP3 {
+		wg.Add(1)
+		http3Server = &http3.Server{
+			Addr:    srv.Addr,
+			Handler: srv.Handler,
+		}
+		go func() {
+			defer wg.Done()
+			logger.Info(fmt.Sprintf("go-httpbin listening on http3://%s", http3Server.Addr))
+			err := http3Server.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
+			if err != nil && err != http.ErrServerClosed {
+				errCh <- fmt.Errorf("http3 server error: %w", err)
+			}
+		}()
+	}
+
+	// Start HTTP/1.1 or HTTP/2 server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var err error
+		if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
+			logger.Info(fmt.Sprintf("go-httpbin listening on https://%s", srv.Addr))
+			err = srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
+		} else {
+			logger.Info(fmt.Sprintf("go-httpbin listening on http://%s", srv.Addr))
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
+			errCh <- fmt.Errorf("http server error: %w", err)
+		}
+	}()
+
+	// Handle graceful shutdown
 	go func() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
@@ -350,20 +401,28 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 		logger.Info("shutting down ...")
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.MaxDuration+1*time.Second)
 		defer cancel()
-		doneCh <- srv.Shutdown(ctx)
+
+		// Shutdown HTTP/1.1 and HTTP/2 server
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Error(fmt.Sprintf("http server shutdown error: %s", err))
+		}
+
+		// Shutdown HTTP/3 server if running
+		if http3Server != nil {
+			if err := http3Server.Close(); err != nil {
+				logger.Error(fmt.Sprintf("http3 server shutdown error: %s", err))
+			}
+		}
+
+		close(doneCh)
 	}()
 
-	var err error
-	if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
-		logger.Info(fmt.Sprintf("go-httpbin listening on https://%s", srv.Addr))
-		err = srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
-	} else {
-		logger.Info(fmt.Sprintf("go-httpbin listening on http://%s", srv.Addr))
-		err = srv.ListenAndServe()
-	}
-	if err != nil && err != http.ErrServerClosed {
+	// Wait for either an error or shutdown signal
+	select {
+	case err := <-errCh:
 		return err
+	case <-doneCh:
+		wg.Wait()
+		return nil
 	}
-
-	return <-doneCh
 }

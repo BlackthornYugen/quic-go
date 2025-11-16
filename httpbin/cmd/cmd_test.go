@@ -26,6 +26,8 @@ const usage = `Usage of go-httpbin:
     	Drop platform-specific headers. Comma-separated list of headers key to drop, supporting wildcard matching.
   -host string
     	Host to listen on (default "0.0.0.0")
+  -http3
+    	Enable HTTP/3 support (requires https-cert-file and https-key-file)
   -https-cert-file string
     	HTTPS Server certificate file
   -https-key-file string
@@ -593,7 +595,7 @@ func TestMainImpl(t *testing.T) {
 			},
 			wantCode: 1,
 			wantOutFn: func(t *testing.T, out string) {
-				assert.Contains(t, out, `msg="error: listen tcp: address -256: invalid port"`, "server error does not contain expected message")
+				assert.Contains(t, out, `msg="error: http server error: listen tcp: address -256: invalid port"`, "server error does not contain expected message")
 			},
 		},
 		"tls cert error": {
@@ -605,7 +607,7 @@ func TestMainImpl(t *testing.T) {
 			},
 			wantCode: 1,
 			wantOutFn: func(t *testing.T, out string) {
-				assert.Contains(t, out, `msg="error: open ./https-cert-does-not-exist: no such file or directory"`, "tls cert error does not contain expected message")
+				assert.Contains(t, out, `msg="error: http server error: open ./https-cert-does-not-exist: no such file or directory"`, "tls cert error does not contain expected message")
 			},
 		},
 		"log format error": {
