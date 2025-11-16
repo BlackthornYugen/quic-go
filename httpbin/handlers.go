@@ -53,6 +53,11 @@ func (h *HTTPBin) UTF8(w http.ResponseWriter, _ *http.Request) {
 	writeHTML(w, mustStaticAsset("utf8.html"), http.StatusOK)
 }
 
+// NetworkTest renders the network test page for testing parallel requests
+func (h *HTTPBin) NetworkTest(w http.ResponseWriter, _ *http.Request) {
+	writeHTML(w, mustStaticAsset("network-test.html"), http.StatusOK)
+}
+
 // Get handles HTTP GET requests
 func (h *HTTPBin) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(http.StatusOK, w, &noBodyResponse{

@@ -2,6 +2,7 @@ package httpbin
 
 import (
 	"bytes"
+	"io/fs"
 	"net/http"
 	"time"
 )
@@ -143,7 +144,15 @@ func (h *HTTPBin) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", h.Index)
 	mux.HandleFunc("GET /encoding/utf8", h.UTF8)
 	mux.HandleFunc("GET /forms/post", h.FormsPost)
+	mux.HandleFunc("GET /network-test", h.NetworkTest)
 	mux.HandleFunc("GET /get", h.Get)
+
+	// Serve static files from the embedded static directory
+	staticFS, err := fs.Sub(staticAssets, "static")
+	if err != nil {
+		panic(err)
+	}
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("GET /websocket/echo", h.WebSocketEcho)
 	mux.HandleFunc("HEAD /head", h.Get)
 	mux.HandleFunc("PATCH /patch", h.RequestWithBody)
