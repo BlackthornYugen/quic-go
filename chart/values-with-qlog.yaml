@@ -1,0 +1,55 @@
+# Example values file for go-httpbin with qlog enabled
+# This configuration enables qlog output for HTTP/3 connection tracing
+
+# Enable HTTPS for HTTP/3 support (required for qlog)
+httpsEnabled: true
+https:
+  certFile: "/certs/jskw.dev.pem"
+  keyFile: "/certs/jskw.dev.pem"
+  livenessProbe:
+    httpGet:
+      path: /
+      port: https
+      scheme: HTTPS
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: https
+      scheme: HTTPS
+    initialDelaySeconds: 3
+    periodSeconds: 5
+
+# QLOG configuration for HTTP/3 connection tracing
+# Setting hostPath automatically enables qlog output
+qlog:
+  # Host path where qlog files will be saved (must exist and be writable)
+  hostPath: /home/jsteel/www_root/jsteelkw.ca/qlogs
+  # Container mount path for qlog files
+  mountPath: /qlogs
+
+# Mount certificates from host
+volumes:
+  - name: certs
+    hostPath:
+      path: /home/jsteel/haproxy.secrets/var/lib/haproxy
+      type: Directory
+
+volumeMounts:
+  - name: certs
+    mountPath: /certs
+    readOnly: true
+
+# Use custom image with HTTP/3 support
+image:
+  name: "go-httpbin:http3"
+  pullPolicy: IfNotPresent
+
+# Enable host networking for direct node access
+hostNetwork:
+  useHostPort: true
+  ports:
+    http: 80
+    https: 443
+    quic: 443

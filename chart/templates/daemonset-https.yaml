@@ -45,6 +45,10 @@ spec:
           value: {{ .Values.https.certFile | quote }}
         - name: HTTPS_KEY_FILE
           value: {{ .Values.https.keyFile | quote }}
+        {{- if .Values.qlog.hostPath }}
+        - name: QLOG_DIR
+          value: {{ .Values.qlog.mountPath | quote }}
+        {{- end }}
         {{- range .Values.env }}
         - name: {{ .name }}
           value: {{ .value | quote }}
@@ -78,13 +82,27 @@ spec:
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
-        {{- with .Values.volumeMounts }}
+        {{ if or .Values.qlog.hostPath .Values.volumeMounts }}
         volumeMounts:
-          {{- toYaml . | nindent 10 }}
+        {{- if .Values.qlog.hostPath }}
+        - name: qlog
+          mountPath: {{ .Values.qlog.mountPath }}
         {{- end }}
-      {{- with .Values.volumes }}
-      volumes:
+        {{- with .Values.volumeMounts }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- end }}
+      {{ if or .Values.qlog.hostPath .Values.volumes }}
+      volumes:
+      {{- if .Values.qlog.hostPath }}
+      - name: qlog
+        hostPath:
+          path: {{ .Values.qlog.hostPath }}
+          type: DirectoryOrCreate
+      {{- end }}
+      {{- with .Values.volumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

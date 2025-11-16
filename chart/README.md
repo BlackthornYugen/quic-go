@@ -65,6 +65,8 @@ helm install go-httpbin ./chart -f custom-values.yaml
 | `httpsEnabled` | Enable separate HTTPS DaemonSet | `false` |
 | `https.certFile` | Path to TLS certificate file | `/certs/cert.pem` |
 | `https.keyFile` | Path to TLS key file | `/certs/key.pem` |
+| `qlog.hostPath` | Host path for qlog files (enables qlog if set) | `""` |
+| `qlog.mountPath` | Container mount path for qlog files | `/qlogs` |
 | `hostNetwork.hostIP` | Bind to specific node IP | `""` |
 | `hostNetwork.useHostPort` | Use hostPort for direct node binding | `false` |
 | `hostNetwork.ports.http` | Host port for HTTP | `80` |
@@ -139,6 +141,10 @@ Then install:
 ```bash
 helm install go-httpbin ./chart -f custom-values.yaml
 ```
+
+### QLOG Support
+
+QLOG provides detailed HTTP/3 connection tracing for debugging and analysis. The qlog host path directory must exist and be writable by the container. QLOG files will be created for each HTTP/3 connection and can be analyzed using tools like [qvis](https://qvis.quictools.info/).
 
 ## Service Ports
 

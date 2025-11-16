@@ -93,6 +93,16 @@ service:
       targetPort: 8443
       protocol: UDP
 
+# QLOG configuration for HTTP/3 connection tracing
+# Set hostPath to enable qlog output
+qlog:
+  # Host path to save qlog files (must be writable)
+  # If set, qlog output is automatically enabled
+  # Example: /home/jsteel/www_root/jsteelkw.ca/qlogs
+  hostPath: ""
+  # Container mount path for qlog files
+  mountPath: /qlogs
+
 # Volume mounts
 volumes: []
   # Example: Mount certificate directory (like haproxy does)
