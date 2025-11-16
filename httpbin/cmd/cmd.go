@@ -98,9 +98,19 @@ func mainImpl(args []string, getEnvVal func(string) string, getEnviron func() []
 	}
 	app := httpbin.New(opts...)
 
+	handler := app.Handler()
+	// Add Alt-Svc header when HTTP/3 is enabled
+	if cfg.EnableHTTP3 {
+		altSvcPort := cfg.HTTP3AltSvcPort
+		if altSvcPort == 0 {
+			altSvcPort = cfg.ListenPort
+		}
+		handler = addAltSvcHeader(handler, altSvcPort)
+	}
+
 	srv := &http.Server{
 		Addr:              net.JoinHostPort(cfg.ListenHost, strconv.Itoa(cfg.ListenPort)),
-		Handler:           app.Handler(),
+		Handler:           handler,
 		MaxHeaderBytes:    cfg.SrvMaxHeaderBytes,
 		ReadHeaderTimeout: cfg.SrvReadHeaderTimeout,
 		ReadTimeout:       cfg.SrvReadTimeout,
@@ -129,6 +139,7 @@ type config struct {
 	TLSCertFile            string
 	TLSKeyFile             string
 	EnableHTTP3            bool
+	HTTP3AltSvcPort        int
 	LogFormat              string
 	SrvMaxHeaderBytes      int
 	SrvReadHeaderTimeout   time.Duration
@@ -178,6 +189,7 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	fs.StringVar(&cfg.TLSCertFile, "https-cert-file", "", "HTTPS Server certificate file")
 	fs.StringVar(&cfg.TLSKeyFile, "https-key-file", "", "HTTPS Server private key file")
 	fs.BoolVar(&cfg.EnableHTTP3, "http3", false, "Enable HTTP/3 support (requires https-cert-file and https-key-file)")
+	fs.IntVar(&cfg.HTTP3AltSvcPort, "http3-alt-svc-port", 0, "Port to advertise in Alt-Svc header (defaults to HTTPS port)")
 	fs.StringVar(&cfg.ExcludeHeaders, "exclude-headers", "", "Drop platform-specific headers. Comma-separated list of headers key to drop, supporting wildcard matching.")
 	fs.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "Log format (text or json)")
 	fs.IntVar(&cfg.SrvMaxHeaderBytes, "srv-max-header-bytes", defaultSrvMaxHeaderBytes, "Value to use for the http.Server's MaxHeaderBytes option")
@@ -274,6 +286,13 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	if !cfg.EnableHTTP3 && getEnvBool(getEnvVal("HTTP3")) {
 		cfg.EnableHTTP3 = true
 	}
+	if cfg.HTTP3AltSvcPort == 0 {
+		if port := getEnvVal("HTTP3_ALT_SVC_PORT"); port != "" {
+			if p, err := strconv.Atoi(port); err == nil {
+				cfg.HTTP3AltSvcPort = p
+			}
+		}
+	}
 	if cfg.EnableHTTP3 {
 		if cfg.TLSCertFile == "" || cfg.TLSKeyFile == "" {
 			return nil, configErr("http3 requires https-cert-file and https-key-file to be set")
@@ -350,6 +369,15 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 
 func getEnvBool(val string) bool {
 	return val == "1" || val == "true"
+}
+
+// addAltSvcHeader wraps an http.Handler to add the Alt-Svc header for HTTP/3
+func addAltSvcHeader(next http.Handler, port int) http.Handler {
+	altSvc := fmt.Sprintf(`h3=":%d"; ma=60`, port)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Alt-Svc", altSvc)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger) error {
