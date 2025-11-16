@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/mccutchen/go-httpbin/v2/httpbin"
+	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -34,6 +35,27 @@ const (
 	defaultSrvReadHeaderTimeout = 1 * time.Second
 	defaultSrvMaxHeaderBytes    = 16 * 1024 // 16kb
 )
+
+// Context key for storing the stats tracker
+type contextKey string
+
+const statsTrackerKey contextKey = "http3-stats-tracker"
+
+// withStatsTracker wraps a handler to inject the stats tracker into the request context
+func withStatsTracker(next http.Handler, tracker *ConnectionStatsTracker) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), statsTrackerKey, tracker)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// getStatsTracker retrieves the stats tracker from the request context
+func getStatsTracker(r *http.Request) *ConnectionStatsTracker {
+	if tracker, ok := r.Context().Value(statsTrackerKey).(*ConnectionStatsTracker); ok {
+		return tracker
+	}
+	return nil
+}
 
 // Main is the main entrypoint for the go-httpbin binary. See loadConfig() for
 // command line argument parsing.
@@ -385,21 +407,35 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 	errCh := make(chan error, 2)
 	doneCh := make(chan struct{})
 
+	// Create connection stats tracker for HTTP/3
+	var statsTracker *ConnectionStatsTracker
+	
 	// Start HTTP/3 server if configured (on same port as HTTPS)
 	var http3Server *http3.Server
 	if cfg.EnableHTTP3 {
 		wg.Add(1)
+		
+		// Initialize the stats tracker
+		statsTracker = NewConnectionStatsTracker()
+		
+		// Set the global stats provider so the httpbin handlers can access it
+		httpbin.SetHTTP3StatsProvider(statsTracker)
+		
 		http3Server = &http3.Server{
 			Addr:    srv.Addr,
 			Handler: srv.Handler,
-			// Note: To enable detailed QUIC statistics (packet loss, RTT, etc.),
-			// implement a quic.ConnectionTracer and set it via:
-			// QuicConfig: &quic.Config{
-			//     Tracer: func(ctx context.Context, p logging.Perspective, id quic.ConnectionID) *logging.ConnectionTracer {
-			//         return yourTracerImplementation
-			//     },
-			// },
+			// Note: Full packet-level statistics tracking would require implementing
+			// a qlogwriter.Trace. For now, we get basic stats from ConnectionState.
+			QUICConfig: &quic.Config{
+				// MaxIncomingStreams: -1, // unlimited
+			},
 		}
+		
+		// Store the stats tracker in the server handler context
+		// so it can be accessed by request handlers
+		srv.Handler = withStatsTracker(srv.Handler, statsTracker)
+		http3Server.Handler = withStatsTracker(http3Server.Handler, statsTracker)
+		
 		go func() {
 			defer wg.Done()
 			logger.Info(fmt.Sprintf("go-httpbin listening on http3://%s", http3Server.Addr))

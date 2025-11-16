@@ -139,26 +139,35 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 		RTT:            "0s",
 	}
 	
-	// Try to get the HTTP/3 connection from the ResponseWriter
-	if hijacker, ok := w.(http3.Hijacker); ok {
-		conn := hijacker.Connection()
-		if conn != nil {
-			stats := conn.ConnectionState()
+	// Try to get stats from the global stats provider
+	if globalStatsProvider != nil {
+		if stats := globalStatsProvider.GetHTTP3Stats(r, w); stats != nil {
+			info.RTT = stats.RTT.String()
+			info.DroppedPackets = stats.DroppedPackets
 			
-			// Record if GSO (Generic Segmentation Offload) is enabled
-			if stats.GSO {
-				info.CongestionWindow = 1 // Indicate GSO is active
+			// Calculate congestion window indicator
+			// If we have a good RTT and low packet loss, set congestion window
+			if stats.RTT > 0 && stats.PacketsSent > 0 {
+				lossRate := float64(stats.PacketsLost) / float64(stats.PacketsSent)
+				if lossRate < 0.01 { // Less than 1% packet loss
+					info.CongestionWindow = stats.BytesSent
+				}
 			}
-			
-			// Note: Detailed packet loss and RTT statistics require implementing
-			// QUIC connection tracing via the quic.Config.Tracer option when
-			// creating the HTTP/3 server. The current stable API doesn't expose
-			// these metrics directly from ConnectionState.
-			//
-			// To add full statistics tracking:
-			// 1. Implement a connection tracer (quic.ConnectionTracer interface)
-			// 2. Store per-connection statistics in a map
-			// 3. Look up statistics here using connection ID
+		}
+	}
+	
+	// Fallback: Try to get basic connection info if stats provider not available
+	if info.RTT == "0s" {
+		if hijacker, ok := w.(http3.Hijacker); ok {
+			conn := hijacker.Connection()
+			if conn != nil {
+				stats := conn.ConnectionState()
+				
+				// Record if GSO (Generic Segmentation Offload) is enabled
+				if stats.GSO {
+					info.CongestionWindow = 1 // Indicate GSO is active
+				}
+			}
 		}
 	}
 	
