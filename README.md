@@ -61,6 +61,27 @@ helm upgrade --install go-httpbin ./chart \
   --set-json 'volumeMounts=[{"name":"certs","mountPath":"/certs","readOnly":true}]'
 ```
 
+### Building and deploying custom images
+
+To build a custom Docker image and deploy it to a remote server running containerd/k3s:
+
+```bash
+# Build the image for linux/amd64
+$ docker buildx build --platform linux/amd64 --load -t go-httpbin:http3 .
+
+# Save the image to a tar file
+$ docker save go-httpbin:http3 -o go-httpbin-http3.tar
+
+# Copy to remote server and import into containerd
+$ rsync -avz go-httpbin-http3.tar ubuntu.jskw.dev:~
+$ ssh ubuntu.jskw.dev 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
+
+# Or do it all in one command:
+$ docker save go-httpbin:http3 -o go-httpbin-http3.tar && \
+  rsync -avz go-httpbin-http3.tar ubuntu.jskw.dev:~ && \
+  ssh ubuntu.jskw.dev 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
+```
+
 ### Standalone binary
 
 Follow the [Installation](#installation) instructions to install go-httpbin as
