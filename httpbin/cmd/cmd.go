@@ -99,6 +99,10 @@ func mainImpl(args []string, getEnvVal func(string) string, getEnviron func() []
 		logger = slog.New(handler)
 	}
 
+	if cfg.http3DisabledDueToNoTLS {
+		logger.Warn("HTTP/3 was requested but requires TLS (https-cert-file and https-key-file); HTTP/3 has been disabled")
+	}
+
 	opts := []httpbin.OptionFunc{
 		httpbin.WithEnv(cfg.Env),
 		httpbin.WithMaxBodySize(cfg.MaxBodySize),
@@ -179,6 +183,7 @@ type config struct {
 	// temporary placeholders for arguments that need extra processing
 	rawAllowedRedirectDomains string
 	rawUseRealHostname        bool
+	http3DisabledDueToNoTLS   bool
 }
 
 // ConfigError is used to signal an error with a command line argument or
@@ -322,7 +327,9 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	}
 	if cfg.EnableHTTP3 {
 		if cfg.TLSCertFile == "" || cfg.TLSKeyFile == "" {
-			return nil, configErr("http3 requires https-cert-file and https-key-file to be set")
+			// Disable HTTP3 if TLS is not configured
+			cfg.EnableHTTP3 = false
+			cfg.http3DisabledDueToNoTLS = true
 		}
 	}
 	if cfg.LogFormat == defaultLogFormat && getEnvVal("LOG_FORMAT") != "" {
