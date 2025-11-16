@@ -7,3 +7,6 @@ coverage.txt
 /cmd/go-httpbin/go-httpbin
 go-httpbin
 *.tar
+*.crt
+*.key
+qlogs/*

@@ -44,6 +44,8 @@ const usage = `Usage of go-httpbin:
     	Port to listen on (default 8080)
   -prefix string
     	Path prefix (empty or start with slash and does not end with slash)
+  -qlog-dir string
+    	Directory to save qlog files for HTTP/3 connections (enables connection tracing)
   -srv-max-header-bytes int
     	Value to use for the http.Server's MaxHeaderBytes option (default 16384)
   -srv-read-header-timeout duration
