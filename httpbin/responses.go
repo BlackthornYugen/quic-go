@@ -40,6 +40,8 @@ type noBodyResponse struct {
 
 	Deflated bool `json:"deflated,omitempty"`
 	Gzipped  bool `json:"gzipped,omitempty"`
+	
+	HTTP3 *HTTP3Info `json:"http3,omitempty"`
 }
 
 // A generic response for any incoming request that might contain a body (POST,
@@ -55,6 +57,8 @@ type bodyResponse struct {
 	Files url.Values `json:"files"`
 	Form  url.Values `json:"form"`
 	JSON  any        `json:"json"`
+	
+	HTTP3 *HTTP3Info `json:"http3,omitempty"`
 }
 
 type cookiesResponse map[string]string
@@ -96,4 +100,12 @@ type errorRespnose struct {
 type serverSentEvent struct {
 	ID        int   `json:"id"`
 	Timestamp int64 `json:"timestamp"`
+}
+
+// HTTP3Info contains QUIC connection statistics for HTTP/3 requests
+type HTTP3Info struct {
+	Protocol       string `json:"protocol"`
+	DroppedPackets uint64 `json:"dropped_packets"`
+	RTT            string `json:"rtt"`            // Round-trip time
+	CongestionWindow uint64 `json:"congestion_window,omitempty"`
 }

@@ -392,6 +392,13 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 		http3Server = &http3.Server{
 			Addr:    srv.Addr,
 			Handler: srv.Handler,
+			// Note: To enable detailed QUIC statistics (packet loss, RTT, etc.),
+			// implement a quic.ConnectionTracer and set it via:
+			// QuicConfig: &quic.Config{
+			//     Tracer: func(ctx context.Context, p logging.Perspective, id quic.ConnectionID) *logging.ConnectionTracer {
+			//         return yourTracerImplementation
+			//     },
+			// },
 		}
 		go func() {
 			defer wg.Done()

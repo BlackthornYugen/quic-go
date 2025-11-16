@@ -61,6 +61,7 @@ func (h *HTTPBin) Get(w http.ResponseWriter, r *http.Request) {
 		Method:  r.Method,
 		Origin:  getClientIP(r),
 		URL:     getURL(r).String(),
+		HTTP3:   getHTTP3InfoFromWriter(w, r),
 	})
 }
 
@@ -89,6 +90,7 @@ func (h *HTTPBin) RequestWithBody(w http.ResponseWriter, r *http.Request) {
 		Method:  r.Method,
 		Origin:  getClientIP(r),
 		URL:     getURL(r).String(),
+		HTTP3:   getHTTP3InfoFromWriter(w, r),
 	}
 
 	if err := parseBody(r, resp); err != nil {

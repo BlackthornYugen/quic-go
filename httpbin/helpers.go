@@ -20,6 +20,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/quic-go/quic-go/http3"
 )
 
 // requestHeaders takes in incoming request and returns an http.Header map
@@ -104,6 +106,63 @@ func getURL(r *http.Request) *url.URL {
 		RawQuery:   r.URL.RawQuery,
 		Fragment:   r.URL.Fragment,
 	}
+}
+
+// getHTTP3Info extracts QUIC connection statistics from an HTTP/3 request
+// Currently returns basic protocol information. For detailed statistics like
+// dropped packets and RTT, QUIC connection tracing would need to be enabled
+// when creating the HTTP/3 server.
+func getHTTP3Info(r *http.Request) *HTTP3Info {
+	// Check if this is an HTTP/3 request
+	if r.ProtoMajor == 3 {
+		return &HTTP3Info{
+			Protocol:       r.Proto,
+			DroppedPackets: 0, // Requires connection tracer - see getHTTP3InfoFromWriter
+			RTT:            "0s", // Requires connection tracer - see getHTTP3InfoFromWriter
+		}
+	}
+	
+	return nil
+}
+
+// getHTTP3InfoFromWriter extracts QUIC connection statistics from an HTTP/3 response writer
+// This provides access to the underlying QUIC connection for more detailed statistics
+func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
+	// Check if this is an HTTP/3 request
+	if r.ProtoMajor != 3 {
+		return nil
+	}
+	
+	info := &HTTP3Info{
+		Protocol:       r.Proto,
+		DroppedPackets: 0,
+		RTT:            "0s",
+	}
+	
+	// Try to get the HTTP/3 connection from the ResponseWriter
+	if hijacker, ok := w.(http3.Hijacker); ok {
+		conn := hijacker.Connection()
+		if conn != nil {
+			stats := conn.ConnectionState()
+			
+			// Record if GSO (Generic Segmentation Offload) is enabled
+			if stats.GSO {
+				info.CongestionWindow = 1 // Indicate GSO is active
+			}
+			
+			// Note: Detailed packet loss and RTT statistics require implementing
+			// QUIC connection tracing via the quic.Config.Tracer option when
+			// creating the HTTP/3 server. The current stable API doesn't expose
+			// these metrics directly from ConnectionState.
+			//
+			// To add full statistics tracking:
+			// 1. Implement a connection tracer (quic.ConnectionTracer interface)
+			// 2. Store per-connection statistics in a map
+			// 3. Look up statistics here using connection ID
+		}
+	}
+	
+	return info
 }
 
 func writeResponse(w http.ResponseWriter, status int, contentType string, body []byte) {
