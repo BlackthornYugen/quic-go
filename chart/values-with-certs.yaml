@@ -1,0 +1,49 @@
+# Configuration for go-httpbin with TLS certificates
+
+# Bind to specific host IP
+hostNetwork:
+  hostIP: "YOUR_NODE_IP"  # e.g., "192.168.1.100"
+  useHostPort: true
+  ports:
+    http: 80
+    https: 443
+    quic: 443
+
+# Enable HTTPS DaemonSet
+httpsEnabled: true
+https:
+  certFile: "/certs/server.pem"
+  keyFile: "/certs/server.pem"
+
+# Mount certificate directory from host
+volumes:
+  - name: certs
+    hostPath:
+      path: /path/to/certificates
+      type: Directory
+
+volumeMounts:
+  - name: certs
+    mountPath: /certs
+    readOnly: true
+
+# Run as user with certificate access
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Use a specific image version
+image:
+  repository: mccutchen/go-httpbin
+  pullPolicy: IfNotPresent
+  tag: "v2.13.4"
+
+# Resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

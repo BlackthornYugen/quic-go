@@ -1,0 +1,159 @@
+# Default values for go-httpbin
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# DaemonSet configuration (runs one pod per node, like haproxy)
+# replicaCount is not applicable for DaemonSet
+
+# HTTPS configuration
+# Enable a separate DaemonSet for HTTPS traffic
+httpsEnabled: false
+https:
+  certFile: "/certs/jskw.dev.pem"
+  keyFile: "/certs/jskw.dev.pem"
+  livenessProbe:
+    httpGet:
+      path: /
+      port: https
+      scheme: HTTPS
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: https
+      scheme: HTTPS
+    initialDelaySeconds: 3
+    periodSeconds: 5
+
+# Host network configuration
+# Set hostIP to bind to a specific node's IP address (like haproxy does)
+hostNetwork:
+  # Bind to a specific host IP address (leave empty to bind to all interfaces)
+  hostIP: ""
+  # Use hostPort to expose ports directly on the node
+  useHostPort: false
+  # Specific ports to expose on the host
+  ports:
+    http: 80
+    https: 443
+    quic: 443
+
+image:
+  repository: mccutchen/go-httpbin
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  # Set a specific cluster IP (leave empty for automatic assignment)
+  clusterIP: ""
+  ports:
+    http:
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    https:
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+    # QUIC support (UDP binding similar to haproxy)
+    quic:
+      port: 443
+      targetPort: 8443
+      protocol: UDP
+
+# Volume mounts
+volumes: []
+  # Example: Mount certificate directory (like haproxy does)
+  # - name: certs
+  #   hostPath:
+  #     path: /home/jsteel/haproxy.secrets/var/lib/haproxy
+  #     type: Directory
+
+volumeMounts: []
+  # Example: Mount certificates
+  # - name: certs
+  #   mountPath: /certs
+  #   readOnly: true
+
+# Environment variables for go-httpbin
+env: []
+  # - name: MAX_DURATION
+  #   value: "10s"
+  # - name: MAX_BODY_SIZE
+  #   value: "1048576"
+  # Example: Point to certificate files
+  # - name: TLS_CERT_FILE
+  #   value: "/certs/jskw.dev.pem"
+  # - name: TLS_KEY_FILE
+  #   value: "/certs/jskw.dev.pem"
+
+# Additional command line arguments
+args: []
+
+# Liveness and readiness probes
+# Default to HTTPS if TLS certificates are configured
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Note: DaemonSets do not support HorizontalPodAutoscaler
+# One pod will run on each node automatically
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

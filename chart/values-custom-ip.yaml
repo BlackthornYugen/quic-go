@@ -1,0 +1,74 @@
+# Example values file for deploying go-httpbin with host IP binding and HTTPS
+
+# Bind to a specific host IP
+hostNetwork:
+  hostIP: "YOUR_NODE_IP_HERE"  # e.g., "192.168.1.100"
+  useHostPort: true
+  ports:
+    http: 80
+    https: 443
+    quic: 443
+
+# Enable HTTPS support
+httpsEnabled: true
+https:
+  certFile: "/certs/server.pem"
+  keyFile: "/certs/server.pem"
+
+# Mount TLS certificates from host
+volumes:
+  - name: certs
+    hostPath:
+      path: /path/to/certificates  # Update this path
+      type: Directory
+
+volumeMounts:
+  - name: certs
+    mountPath: /certs
+    readOnly: true
+
+# Configure pod security context for certificate access
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Set a specific cluster IP (optional)
+service:
+  type: ClusterIP
+  clusterIP: ""  # Leave empty for automatic assignment
+  ports:
+    http:
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    https:
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+    # QUIC support via UDP (like haproxy)
+    quic:
+      port: 443
+      targetPort: 8443
+      protocol: UDP
+
+# DaemonSet will run one pod on each node automatically
+# replicaCount is not applicable
+
+# Use a specific image version
+image:
+  repository: mccutchen/go-httpbin
+  pullPolicy: IfNotPresent
+  tag: "v2.13.4"
+
+# Resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Note: DaemonSets do not support autoscaling
+# One pod will automatically run on each node in the cluster

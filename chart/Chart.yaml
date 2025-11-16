@@ -1,0 +1,14 @@
+apiVersion: v2
+name: go-httpbin
+description: A Helm chart for go-httpbin with QUIC/UDP support
+type: application
+version: 0.1.0
+appVersion: "latest"
+maintainers:
+  - name: go-httpbin
+keywords:
+  - httpbin
+  - testing
+  - http
+  - quic
+home: https://github.com/mccutchen/go-httpbin

@@ -1,0 +1,100 @@
+{{- if .Values.httpsEnabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "go-httpbin.fullname" . }}-https
+  labels:
+    {{- include "go-httpbin.labels" . | nindent 4 }}
+    app.kubernetes.io/component: https
+spec:
+  selector:
+    matchLabels:
+      {{- include "go-httpbin.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: https
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "go-httpbin.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: https
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "go-httpbin.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- with .Values.args }}
+        args:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        env:
+        - name: PORT
+          value: "8443"
+        - name: HTTPS_CERT_FILE
+          value: {{ .Values.https.certFile | quote }}
+        - name: HTTPS_KEY_FILE
+          value: {{ .Values.https.keyFile | quote }}
+        {{- with .Values.env }}
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        ports:
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+          {{- if .Values.hostNetwork.useHostPort }}
+          hostPort: {{ .Values.hostNetwork.ports.https }}
+          {{- if .Values.hostNetwork.hostIP }}
+          hostIP: {{ .Values.hostNetwork.hostIP }}
+          {{- end }}
+          {{- end }}
+        - name: quic
+          containerPort: 8443
+          protocol: UDP
+          {{- if .Values.hostNetwork.useHostPort }}
+          hostPort: {{ .Values.hostNetwork.ports.quic }}
+          {{- if .Values.hostNetwork.hostIP }}
+          hostIP: {{ .Values.hostNetwork.hostIP }}
+          {{- end }}
+          {{- end }}
+        {{- if .Values.https.livenessProbe }}
+        livenessProbe:
+          {{- toYaml .Values.https.livenessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.https.readinessProbe }}
+        readinessProbe:
+          {{- toYaml .Values.https.readinessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        {{- with .Values.volumeMounts }}
+        volumeMounts:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
