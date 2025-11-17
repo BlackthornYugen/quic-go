@@ -71,27 +71,6 @@ function formatNumber(num) {
 }
 
 /**
- * Creates a stat row element
- */
-function createStatRow(label, value, isError = false) {
-    const row = document.createElement('div');
-    row.className = 'stat-row';
-    
-    const labelDiv = document.createElement('div');
-    labelDiv.className = 'stat-label';
-    labelDiv.textContent = label;
-    
-    const valueDiv = document.createElement('div');
-    valueDiv.className = 'stat-value' + (isError ? ' error' : '');
-    valueDiv.textContent = value;
-    
-    row.appendChild(labelDiv);
-    row.appendChild(valueDiv);
-    
-    return row;
-}
-
-/**
  * Extract connection ID from qlog URL
  */
 function extractConnectionId(qlogUrl) {
@@ -118,76 +97,128 @@ function buildQvisLink(qlogUrl) {
 }
 
 /**
- * Creates a request card to display results
+ * Creates a table for displaying results
  */
-function createRequestCard(index, data, duration, error = null) {
-    const card = document.createElement('div');
-    card.className = 'request-card';
+function createResultsTable() {
+    const table = document.createElement('table');
+    table.className = 'results-table';
     
-    const title = document.createElement('h3');
-    title.textContent = `Request #${index}`;
-    card.appendChild(title);
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    
+    const headers = ['#', 'Status', 'Duration', 'Protocol', 'RTT', 'Dropped', 'Congestion', 'Connection ID', 'QLog'];
+    headers.forEach(headerText => {
+        const th = document.createElement('th');
+        th.textContent = headerText;
+        headerRow.appendChild(th);
+    });
+    
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    const tbody = document.createElement('tbody');
+    tbody.id = 'resultsBody';
+    table.appendChild(tbody);
+    
+    return table;
+}
+
+/**
+ * Creates a table row for a single request result
+ */
+function createResultRow(index, data, duration, error = null) {
+    const row = document.createElement('tr');
+    
+    // Request number
+    const numCell = document.createElement('td');
+    numCell.textContent = index;
+    row.appendChild(numCell);
     
     if (error) {
-        card.appendChild(createStatRow('Status', 'Error', true));
-        card.appendChild(createStatRow('Error', error, true));
-        return card;
+        // Status
+        const statusCell = document.createElement('td');
+        statusCell.textContent = 'Error';
+        statusCell.className = 'status-error';
+        row.appendChild(statusCell);
+        
+        // Error message spans remaining columns
+        const errorCell = document.createElement('td');
+        errorCell.colSpan = 7;
+        errorCell.textContent = error;
+        errorCell.className = 'status-error';
+        row.appendChild(errorCell);
+        
+        return row;
     }
     
-    // Basic request info
-    card.appendChild(createStatRow('Status', 'Success ✓'));
-    card.appendChild(createStatRow('Duration', `${duration.toFixed(2)} ms`));
-    card.appendChild(createStatRow('Method', data.method || 'N/A'));
-    card.appendChild(createStatRow('Origin', data.origin || 'N/A'));
+    // Status
+    const statusCell = document.createElement('td');
+    statusCell.textContent = '✓';
+    statusCell.className = 'status-success';
+    row.appendChild(statusCell);
     
-    // HTTP/3 Statistics (if available)
+    // Duration
+    const durationCell = document.createElement('td');
+    durationCell.textContent = `${duration.toFixed(2)} ms`;
+    row.appendChild(durationCell);
+    
+    // HTTP/3 Statistics
     if (data.http3) {
-        const http3Title = document.createElement('h4');
-        http3Title.textContent = 'HTTP/3 Statistics';
-        http3Title.style.marginTop = '15px';
-        http3Title.style.color = '#2196F3';
-        card.appendChild(http3Title);
+        // Protocol
+        const protoCell = document.createElement('td');
+        protoCell.textContent = data.http3.protocol || 'N/A';
+        row.appendChild(protoCell);
         
-        card.appendChild(createStatRow('Protocol', data.http3.protocol || 'N/A'));
-        card.appendChild(createStatRow('RTT', data.http3.rtt || 'N/A'));
-        card.appendChild(createStatRow('Dropped Packets', formatNumber(data.http3.dropped_packets || 0)));
+        // RTT
+        const rttCell = document.createElement('td');
+        rttCell.textContent = data.http3.rtt || 'N/A';
+        row.appendChild(rttCell);
         
-        if (data.http3.congestion_window) {
-            card.appendChild(createStatRow('Congestion Window', formatBytes(data.http3.congestion_window)));
-        }
+        // Dropped packets
+        const droppedCell = document.createElement('td');
+        droppedCell.textContent = formatNumber(data.http3.dropped_packets || 0);
+        row.appendChild(droppedCell);
         
-        // Extract and display connection ID from qlog URL
+        // Congestion window
+        const congestionCell = document.createElement('td');
+        congestionCell.textContent = data.http3.congestion_window ? formatBytes(data.http3.congestion_window) : '-';
+        row.appendChild(congestionCell);
+        
+        // Connection ID
+        const connIdCell = document.createElement('td');
         const connectionId = extractConnectionId(data.http3.qlog_url);
         if (connectionId) {
-            card.appendChild(createStatRow('Connection ID', connectionId));
+            connIdCell.textContent = connectionId;
+            connIdCell.className = 'conn-id';
+        } else {
+            connIdCell.textContent = '-';
         }
+        row.appendChild(connIdCell);
         
-        // Add qlog visualization link if qlog URL is available
+        // QLog link
+        const qlogCell = document.createElement('td');
         if (data.http3.qlog_url) {
             const qvisLink = buildQvisLink(data.http3.qlog_url);
-            
-            const linkContainer = document.createElement('div');
-            linkContainer.style.marginTop = '10px';
-            
             const link = document.createElement('a');
             link.href = qvisLink;
             link.target = '_blank';
             link.className = 'qlog-link';
-            link.textContent = 'View QLog Visualization';
-            
-            linkContainer.appendChild(link);
-            card.appendChild(linkContainer);
+            link.textContent = 'View';
+            qlogCell.appendChild(link);
+        } else {
+            qlogCell.textContent = '-';
         }
+        row.appendChild(qlogCell);
     } else {
-        const noHttp3 = document.createElement('div');
-        noHttp3.style.marginTop = '15px';
-        noHttp3.style.fontStyle = 'italic';
-        noHttp3.style.color = '#999';
-        noHttp3.textContent = 'No HTTP/3 statistics available (using HTTP/1.1 or HTTP/2)';
-        card.appendChild(noHttp3);
+        // No HTTP/3 data - fill with dashes
+        for (let i = 0; i < 6; i++) {
+            const cell = document.createElement('td');
+            cell.textContent = '-';
+            row.appendChild(cell);
+        }
     }
     
-    return card;
+    return row;
 }
 
 /**
@@ -196,8 +227,11 @@ function createRequestCard(index, data, duration, error = null) {
 async function performRequest(index, delaySeconds) {
     const startTime = performance.now();
     
+    // Ensure delaySeconds is at least 0, default to 0 if not provided
+    const actualDelay = delaySeconds || 0;
+    
     try {
-        const response = await fetch(`/delay/${delaySeconds}`);
+        const response = await fetch(`/delay/${actualDelay}`);
         const endTime = performance.now();
         const duration = endTime - startTime;
         
@@ -271,6 +305,11 @@ async function startTest() {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
     
+    // Create table
+    const table = createResultsTable();
+    resultsContainer.appendChild(table);
+    const tbody = document.getElementById('resultsBody');
+    
     const delayText = requestDelay > 0 || delayIncrement > 0 
         ? ` with ${requestDelay}ms initial delay${delayIncrement > 0 ? ` (+${delayIncrement}ms/req)` : ''} between requests` 
         : ' in parallel';
@@ -290,8 +329,8 @@ async function startTest() {
         
         // Wrap each request to display results as they complete
         const promise = performRequest(i, currentEndpointDelay).then(result => {
-            const card = createRequestCard(result.index, result.data, result.duration, result.error);
-            resultsContainer.appendChild(card);
+            const row = createResultRow(result.index, result.data, result.duration, result.error);
+            tbody.appendChild(row);
             return result;
         });
         
@@ -346,9 +385,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const requestCountInput = document.getElementById('requestCount');
     const requestDelayInput = document.getElementById('requestDelay');
     const delayIncrementInput = document.getElementById('delayIncrement');
-    const endpointDelaySlider = document.getElementById('endpointDelay');
+    const endpointDelayInput = document.getElementById('endpointDelay');
     const endpointDelayIncrementInput = document.getElementById('endpointDelayIncrement');
-    const endpointDelayValue = document.getElementById('endpointDelayValue');
     
     requestCountInput.addEventListener('keypress', handleEnter);
     requestCountInput.addEventListener('input', updateOnChange);
@@ -359,12 +397,9 @@ document.addEventListener('DOMContentLoaded', function() {
     delayIncrementInput.addEventListener('keypress', handleEnter);
     delayIncrementInput.addEventListener('input', updateOnChange);
     
+    endpointDelayInput.addEventListener('keypress', handleEnter);
+    endpointDelayInput.addEventListener('input', updateOnChange);
+    
     endpointDelayIncrementInput.addEventListener('keypress', handleEnter);
     endpointDelayIncrementInput.addEventListener('input', updateOnChange);
-    
-    // Update endpoint delay display when slider changes
-    endpointDelaySlider.addEventListener('input', function() {
-        endpointDelayValue.textContent = this.value;
-        updateOnChange();
-    });
 });
