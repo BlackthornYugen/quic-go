@@ -157,7 +157,7 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 				}
 			}
 			
-			// Generate qvis visualization link if qlog is enabled
+			// Provide qlog URL if qlog is enabled
 			if stats.QLogFilename != "" {
 				publicPrefix := globalStatsProvider.GetQLogPublicPrefix()
 				if publicPrefix != "" {
@@ -165,9 +165,7 @@ func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
 					if publicPrefix[len(publicPrefix)-1] != '/' {
 						publicPrefix += "/"
 					}
-					qlogURL := publicPrefix + stats.QLogFilename
-					// Generate qvis link
-					info.QLogVisualizationLink = "https://qvis.quictools.info/#/sequence?file=" + url.QueryEscape(qlogURL)
+					info.QLogURL = publicPrefix + stats.QLogFilename
 				}
 			}
 		}

@@ -92,6 +92,32 @@ function createStatRow(label, value, isError = false) {
 }
 
 /**
+ * Extract connection ID from qlog URL
+ */
+function extractConnectionId(qlogUrl) {
+    if (!qlogUrl) return null;
+    
+    try {
+        const filename = qlogUrl.split('/').pop();
+        // Extract connection ID (part before _server.sqlog or _client.sqlog)
+        const match = filename.match(/^([a-f0-9]+)_(server|client)\.sqlog$/);
+        return match ? match[1] : filename;
+    } catch (e) {
+        console.error('Error extracting connection ID:', e);
+    }
+    
+    return null;
+}
+
+/**
+ * Build qvis visualization link from qlog URL
+ */
+function buildQvisLink(qlogUrl) {
+    if (!qlogUrl) return null;
+    return 'https://qvis.quictools.info/#/sequence?file=' + encodeURIComponent(qlogUrl);
+}
+
+/**
  * Creates a request card to display results
  */
 function createRequestCard(index, data, duration, error = null) {
@@ -130,13 +156,21 @@ function createRequestCard(index, data, duration, error = null) {
             card.appendChild(createStatRow('Congestion Window', formatBytes(data.http3.congestion_window)));
         }
         
-        // Add qlog visualization link if available
-        if (data.http3.qlog_visualization_link) {
+        // Extract and display connection ID from qlog URL
+        const connectionId = extractConnectionId(data.http3.qlog_url);
+        if (connectionId) {
+            card.appendChild(createStatRow('Connection ID', connectionId));
+        }
+        
+        // Add qlog visualization link if qlog URL is available
+        if (data.http3.qlog_url) {
+            const qvisLink = buildQvisLink(data.http3.qlog_url);
+            
             const linkContainer = document.createElement('div');
             linkContainer.style.marginTop = '10px';
             
             const link = document.createElement('a');
-            link.href = data.http3.qlog_visualization_link;
+            link.href = qvisLink;
             link.target = '_blank';
             link.className = 'qlog-link';
             link.textContent = 'View QLog Visualization';

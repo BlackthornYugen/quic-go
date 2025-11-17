@@ -104,9 +104,9 @@ type serverSentEvent struct {
 
 // HTTP3Info contains QUIC connection statistics for HTTP/3 requests
 type HTTP3Info struct {
-	Protocol             string `json:"protocol"`
-	DroppedPackets       uint64 `json:"dropped_packets"`
-	RTT                  string `json:"rtt"`            // Round-trip time
-	CongestionWindow     uint64 `json:"congestion_window,omitempty"`
-	QLogVisualizationLink string `json:"qlog_visualization_link,omitempty"` // Link to qvis visualization
+	Protocol         string `json:"protocol"`
+	DroppedPackets   uint64 `json:"dropped_packets"`
+	RTT              string `json:"rtt"` // Round-trip time
+	CongestionWindow uint64 `json:"congestion_window,omitempty"`
+	QLogURL          string `json:"qlog_url,omitempty"` // URL to qlog file
 }
