@@ -109,7 +109,7 @@ function createResultsTable() {
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     
-    const headers = ['#', 'Status', 'Duration', 'Protocol', 'RTT', 'Dropped', 'Congestion', 'Connection ID', 'QLog'];
+    const headers = ['#', 'Status', 'Duration', 'HTTP/3', 'RTT', 'Dropped', 'Congestion', 'Connection ID', 'QLog'];
     headers.forEach(headerText => {
         const th = document.createElement('th');
         th.textContent = headerText;
@@ -167,10 +167,12 @@ function createResultRow(index, data, duration, error = null) {
     
     // HTTP/3 Statistics
     if (data.http3) {
-        // Protocol
-        const protoCell = document.createElement('td');
-        protoCell.textContent = data.http3.protocol || 'N/A';
-        row.appendChild(protoCell);
+        // HTTP/3 indicator
+        const http3Cell = document.createElement('td');
+        const isHttp3 = data.http3.protocol && data.http3.protocol.toLowerCase().includes('http/3');
+        http3Cell.textContent = isHttp3 ? '✓' : '-';
+        http3Cell.className = isHttp3 ? 'status-success' : '';
+        row.appendChild(http3Cell);
         
         // RTT
         const rttCell = document.createElement('td');
