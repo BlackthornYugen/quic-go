@@ -308,6 +308,19 @@ function sleep(ms) {
 }
 
 /**
+ * Parse a numeric input field preserving 0 values
+ * @param {string} id - element id
+ * @param {number} defaultValue - fallback if NaN
+ * @param {boolean} isFloat - whether to parse as float
+ */
+function parseNumeric(id, defaultValue, isFloat = false) {
+    const inputElement = document.getElementById(id);
+    if (!inputElement) return defaultValue;
+    const raw = isFloat ? parseFloat(inputElement.value) : parseInt(inputElement.value, 10);
+    return Number.isNaN(raw) ? defaultValue : raw;
+}
+
+/**
  * Starts the network test
  */
 async function startTest() {
@@ -316,11 +329,11 @@ async function startTest() {
     }
     
     // Get configuration
-    const requestCount = parseInt(document.getElementById('requestCount').value) || 5;
-    const requestDelay = parseInt(document.getElementById('requestDelay').value) || 20;
-    const delayIncrement = parseInt(document.getElementById('delayIncrement').value) || 0;
-    const endpointDelay = parseFloat(document.getElementById('endpointDelay').value) || 10;
-    const endpointDelayIncrement = parseFloat(document.getElementById('endpointDelayIncrement').value) || 0;
+    const requestCount = parseNumeric('requestCount', 5);
+    const requestDelay = parseNumeric('requestDelay', 20);
+    const delayIncrement = parseNumeric('delayIncrement', 0);
+    const endpointDelay = parseNumeric('endpointDelay', 10, true);
+    const endpointDelayIncrement = parseNumeric('endpointDelayIncrement', 0, true);
     
     if (requestCount < 1 || requestCount > MAX_REQUESTS) {
         updateStatus(`Please enter a number between 1 and ${MAX_REQUESTS}`, true);
