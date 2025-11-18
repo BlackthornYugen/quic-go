@@ -1,0 +1,220 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+.controls {
+    text-align: center;
+    margin: 30px 0;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px 32px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.config {
+    max-width: 600px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.config-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    gap: 20px;
+}
+
+.config-row label {
+    flex: 1;
+    text-align: right;
+    font-weight: bold;
+    color: #555;
+}
+
+.config-row input {
+    flex: 0 0 150px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.config-row input[type="range"] {
+    flex: 0 0 200px;
+}
+
+#endpointDelayValue {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+#status {
+    text-align: center;
+    margin: 20px 0;
+    font-size: 18px;
+    color: #666;
+}
+
+#results {
+    margin-top: 20px;
+    position: relative;
+}
+
+#resultsTable {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.column-controls-wrapper {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: none;
+}
+
+.gear-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background-color 0.3s;
+}
+
+.gear-button:hover {
+    background: #45a049;
+}
+
+.column-panel {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background: white;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 220px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.column-panel.visible {
+    display: block;
+}
+
+.column-panel h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.column-toggle {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    margin: 4px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.column-toggle:hover {
+    background-color: #f0f0f0;
+}
+
+.column-toggle input {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.column-toggle span {
+    font-size: 14px;
+    color: #333;
+    user-select: none;
+}
+
+.tabulator .tabulator-header {
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+    background-color: #4CAF50;
+    color: white;
+    border-right: 1px solid #45a049;
+}
+
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+    padding: 12px;
+}
+
+.tabulator-row:hover {
+    background-color: #f5f5f5 !important;
+}
+
+.status-success {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.status-error {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.qlog-link {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #2196F3;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.qlog-link:hover {
+    background-color: #0b7dda;
+}
+
+.conn-id {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
