@@ -1,6 +1,9 @@
 // Global variables
 let testInProgress = false;
 
+// Configuration constants
+const MAX_REQUESTS = 100000;
+
 /**
  * Load settings from URL query parameters
  */
@@ -291,8 +294,8 @@ async function startTest() {
     const endpointDelay = parseFloat(document.getElementById('endpointDelay').value) || 10;
     const endpointDelayIncrement = parseFloat(document.getElementById('endpointDelayIncrement').value) || 0;
     
-    if (requestCount < 1 || requestCount > 20) {
-        updateStatus('Please enter a number between 1 and 20', true);
+    if (requestCount < 1 || requestCount > MAX_REQUESTS) {
+        updateStatus(`Please enter a number between 1 and ${MAX_REQUESTS}`, true);
         return;
     }
     
