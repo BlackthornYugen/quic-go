@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Network Test - HTTP/3 Statistics</title>
+    <link href="/static/tabulator.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -79,32 +80,26 @@
         }
         #results {
             margin-top: 20px;
-            overflow-x: auto;
         }
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
+        #resultsTable {
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .results-table th {
+        .tabulator .tabulator-header {
             background-color: #4CAF50;
             color: white;
-            padding: 12px;
-            text-align: left;
             font-weight: bold;
-            position: sticky;
-            top: 0;
         }
-        .results-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #eee;
+        .tabulator .tabulator-header .tabulator-col {
+            background-color: #4CAF50;
+            color: white;
+            border-right: 1px solid #45a049;
         }
-        .results-table tr:hover {
-            background-color: #f5f5f5;
+        .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+            padding: 12px;
         }
-        .results-table tr:last-child td {
-            border-bottom: none;
+        .tabulator-row:hover {
+            background-color: #f5f5f5 !important;
         }
         .status-success {
             color: #4CAF50;
@@ -168,8 +163,11 @@
 
     <div id="status"></div>
 
-    <div id="results"></div>
+    <div id="results">
+        <div id="resultsTable"></div>
+    </div>
 
+    <script src="/static/tabulator.min.js"></script>
     <script src="/static/network-test.js"></script>
 </body>
 </html>

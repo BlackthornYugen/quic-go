@@ -1,8 +1,50 @@
 // Global variables
 let testInProgress = false;
+let table = null;
 
 // Configuration constants
 const MAX_REQUESTS = 100000;
+
+// Column definitions for Tabulator
+const COLUMN_DEFINITIONS = [
+    {field: "index", title: "#", width: 60, sorter: "number"},
+    {field: "status", title: "Status", width: 80, formatter: function(cell) {
+        const value = cell.getValue();
+        if (value === 'success') {
+            return '<span class="status-success">✓</span>';
+        } else {
+            return '<span class="status-error">✗</span>';
+        }
+    }},
+    {field: "duration", title: "Duration", width: 110, sorter: "number", formatter: function(cell) {
+        return cell.getValue().toFixed(2) + ' ms';
+    }},
+    {field: "http3", title: "HTTP/3", width: 80, formatter: function(cell) {
+        const value = cell.getValue();
+        return value ? '<span class="status-success">✓</span>' : '-';
+    }},
+    {field: "rtt", title: "RTT", width: 100},
+    {field: "dropped", title: "Dropped", width: 100, sorter: "number", formatter: function(cell) {
+        return formatNumber(cell.getValue() || 0);
+    }},
+    {field: "congestion", title: "Congestion", width: 120, formatter: function(cell) {
+        const value = cell.getValue();
+        return value ? formatBytes(value) : '-';
+    }},
+    {field: "connectionId", title: "Connection ID", width: 150, cssClass: "conn-id"},
+    {field: "qlogUrl", title: "QLog", width: 80, formatter: function(cell) {
+        const value = cell.getValue();
+        if (value) {
+            const qvisLink = buildQvisLink(value);
+            return `<a href="${qvisLink}" target="_blank" class="qlog-link">View</a>`;
+        }
+        return '-';
+    }},
+    {field: "error", title: "Error", visible: false, formatter: function(cell) {
+        const value = cell.getValue();
+        return value ? `<span class="status-error">${value}</span>` : '';
+    }},
+];
 
 /**
  * Load settings from URL query parameters
@@ -100,130 +142,56 @@ function buildQvisLink(qlogUrl) {
 }
 
 /**
- * Creates a table for displaying results
+ * Initialize Tabulator table
  */
-function createResultsTable() {
-    const table = document.createElement('table');
-    table.className = 'results-table';
+function initializeTable() {
+    if (table) {
+        table.destroy();
+    }
     
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
-    const headers = ['#', 'Status', 'Duration', 'HTTP/3', 'RTT', 'Dropped', 'Congestion', 'Connection ID', 'QLog'];
-    headers.forEach(headerText => {
-        const th = document.createElement('th');
-        th.textContent = headerText;
-        headerRow.appendChild(th);
+    table = new Tabulator("#resultsTable", {
+        layout: "fitColumns",
+        height: "500px",
+        columns: COLUMN_DEFINITIONS,
+        initialSort: [{column: "index", dir: "asc"}],
+        placeholder: "No test results yet",
     });
-    
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    
-    const tbody = document.createElement('tbody');
-    tbody.id = 'resultsBody';
-    table.appendChild(tbody);
-    
-    return table;
 }
 
 /**
- * Creates a table row for a single request result
+ * Convert request result to table row data
  */
-function createResultRow(index, data, duration, error = null) {
-    const row = document.createElement('tr');
-    
-    // Request number
-    const numCell = document.createElement('td');
-    numCell.textContent = index;
-    row.appendChild(numCell);
-    
+function resultToRowData(index, data, duration, error = null) {
     if (error) {
-        // Status
-        const statusCell = document.createElement('td');
-        statusCell.textContent = 'Error';
-        statusCell.className = 'status-error';
-        row.appendChild(statusCell);
-        
-        // Error message spans remaining columns
-        const errorCell = document.createElement('td');
-        errorCell.colSpan = 7;
-        errorCell.textContent = error;
-        errorCell.className = 'status-error';
-        row.appendChild(errorCell);
-        
-        return row;
+        return {
+            index: index,
+            status: 'error',
+            duration: duration,
+            http3: false,
+            rtt: '-',
+            dropped: 0,
+            congestion: null,
+            connectionId: '-',
+            qlogUrl: null,
+            error: error
+        };
     }
     
-    // Status
-    const statusCell = document.createElement('td');
-    statusCell.textContent = '✓';
-    statusCell.className = 'status-success';
-    row.appendChild(statusCell);
+    const isHttp3 = data.http3 && data.http3.protocol && data.http3.protocol.toLowerCase().includes('http/3');
+    const connectionId = data.http3 ? extractConnectionId(data.http3.qlog_url) : null;
     
-    // Duration
-    const durationCell = document.createElement('td');
-    durationCell.textContent = `${duration.toFixed(2)} ms`;
-    row.appendChild(durationCell);
-    
-    // HTTP/3 Statistics
-    if (data.http3) {
-        // HTTP/3 indicator
-        const http3Cell = document.createElement('td');
-        const isHttp3 = data.http3.protocol && data.http3.protocol.toLowerCase().includes('http/3');
-        http3Cell.textContent = isHttp3 ? '✓' : '-';
-        http3Cell.className = isHttp3 ? 'status-success' : '';
-        row.appendChild(http3Cell);
-        
-        // RTT
-        const rttCell = document.createElement('td');
-        rttCell.textContent = data.http3.rtt || 'N/A';
-        row.appendChild(rttCell);
-        
-        // Dropped packets
-        const droppedCell = document.createElement('td');
-        droppedCell.textContent = formatNumber(data.http3.dropped_packets || 0);
-        row.appendChild(droppedCell);
-        
-        // Congestion window
-        const congestionCell = document.createElement('td');
-        congestionCell.textContent = data.http3.congestion_window ? formatBytes(data.http3.congestion_window) : '-';
-        row.appendChild(congestionCell);
-        
-        // Connection ID
-        const connIdCell = document.createElement('td');
-        const connectionId = extractConnectionId(data.http3.qlog_url);
-        if (connectionId) {
-            connIdCell.textContent = connectionId;
-            connIdCell.className = 'conn-id';
-        } else {
-            connIdCell.textContent = '-';
-        }
-        row.appendChild(connIdCell);
-        
-        // QLog link
-        const qlogCell = document.createElement('td');
-        if (data.http3.qlog_url) {
-            const qvisLink = buildQvisLink(data.http3.qlog_url);
-            const link = document.createElement('a');
-            link.href = qvisLink;
-            link.target = '_blank';
-            link.className = 'qlog-link';
-            link.textContent = 'View';
-            qlogCell.appendChild(link);
-        } else {
-            qlogCell.textContent = '-';
-        }
-        row.appendChild(qlogCell);
-    } else {
-        // No HTTP/3 data - fill with dashes
-        for (let i = 0; i < 6; i++) {
-            const cell = document.createElement('td');
-            cell.textContent = '-';
-            row.appendChild(cell);
-        }
-    }
-    
-    return row;
+    return {
+        index: index,
+        status: 'success',
+        duration: duration,
+        http3: isHttp3,
+        rtt: data.http3 ? (data.http3.rtt || 'N/A') : '-',
+        dropped: data.http3 ? (data.http3.dropped_packets || 0) : 0,
+        congestion: data.http3 ? data.http3.congestion_window : null,
+        connectionId: connectionId || '-',
+        qlogUrl: data.http3 ? data.http3.qlog_url : null,
+        error: null
+    };
 }
 
 /**
@@ -307,13 +275,8 @@ async function startTest() {
     button.disabled = true;
     button.textContent = 'Test in Progress...';
     
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
-    
-    // Create table
-    const table = createResultsTable();
-    resultsContainer.appendChild(table);
-    const tbody = document.getElementById('resultsBody');
+    // Initialize or clear table
+    initializeTable();
     
     const delayText = requestDelay > 0 || delayIncrement > 0 
         ? ` with ${requestDelay}ms initial delay${delayIncrement > 0 ? ` (+${delayIncrement}ms/req)` : ''} between requests` 
@@ -334,8 +297,8 @@ async function startTest() {
         
         // Wrap each request to display results as they complete
         const promise = performRequest(i, currentEndpointDelay).then(result => {
-            const row = createResultRow(result.index, result.data, result.duration, result.error);
-            tbody.appendChild(row);
+            const rowData = resultToRowData(result.index, result.data, result.duration, result.error);
+            table.addRow(rowData);
             return result;
         });
         
