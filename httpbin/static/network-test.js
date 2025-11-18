@@ -7,8 +7,8 @@ const MAX_REQUESTS = 100000;
 
 // Column definitions for Tabulator
 const COLUMN_DEFINITIONS = [
-    {field: "index", title: "#", width: 60, sorter: "number"},
-    {field: "status", title: "Status", width: 80, formatter: function(cell) {
+    {field: "index", title: "#", width: 70, sorter: "number"},
+    {field: "status", title: "Status", width: 100, formatter: function(cell) {
         const value = cell.getValue();
         if (value === 'success') {
             return '<span class="status-success">✓</span>';
@@ -16,23 +16,23 @@ const COLUMN_DEFINITIONS = [
             return '<span class="status-error">✗</span>';
         }
     }},
-    {field: "duration", title: "Duration", width: 110, sorter: "number", formatter: function(cell) {
+    {field: "duration", title: "Duration", width: 120, sorter: "number", formatter: function(cell) {
         return cell.getValue().toFixed(2) + ' ms';
     }},
-    {field: "http3", title: "HTTP/3", width: 80, formatter: function(cell) {
+    {field: "http3", title: "HTTP/3", width: 120, formatter: function(cell) {
         const value = cell.getValue();
         return value ? '<span class="status-success">✓</span>' : '-';
     }},
-    {field: "rtt", title: "RTT", width: 100},
-    {field: "dropped", title: "Dropped", width: 100, sorter: "number", formatter: function(cell) {
+    {field: "rtt", title: "RTT", width: 100, visible: false},
+    {field: "dropped", title: "Dropped", width: 100, sorter: "number", visible: false, formatter: function(cell) {
         return formatNumber(cell.getValue() || 0);
     }},
-    {field: "congestion", title: "Congestion", width: 120, formatter: function(cell) {
+    {field: "congestion", title: "Congestion", width: 150, formatter: function(cell) {
         const value = cell.getValue();
         return value ? formatBytes(value) : '-';
     }},
-    {field: "connectionId", title: "Connection ID", width: 150, cssClass: "conn-id"},
-    {field: "qlogUrl", title: "QLog", width: 80, formatter: function(cell) {
+    {field: "connectionId", title: "Connection ID", width: 200, cssClass: "conn-id"},
+    {field: "qlogUrl", title: "QLog", width: 100, formatter: function(cell) {
         const value = cell.getValue();
         if (value) {
             const qvisLink = buildQvisLink(value);
