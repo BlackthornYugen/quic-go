@@ -8,7 +8,7 @@ const MAX_REQUESTS = 100000;
 // Column definitions for Tabulator
 const COLUMN_DEFINITIONS = [
     {field: "index", title: "#", width: 70, sorter: "number"},
-    {field: "status", title: "Status", width: 100, formatter: function(cell) {
+    {field: "status", title: "Status", width: 110, formatter: function(cell) {
         const value = cell.getValue();
         if (value === 'success') {
             return '<span class="status-success">✓</span>';
@@ -16,22 +16,22 @@ const COLUMN_DEFINITIONS = [
             return '<span class="status-error">✗</span>';
         }
     }},
-    {field: "duration", title: "Duration", width: 120, sorter: "number", formatter: function(cell) {
-        return cell.getValue().toFixed(2) + ' ms';
-    }},
-    {field: "http3", title: "HTTP/3", width: 120, formatter: function(cell) {
+    {field: "http3", title: "HTTP/3", width: 110, formatter: function(cell) {
         const value = cell.getValue();
         return value ? '<span class="status-success">✓</span>' : '-';
+    }},
+    {field: "duration", title: "Duration", width: 120, sorter: "number", formatter: function(cell) {
+        return cell.getValue().toFixed(2) + ' ms';
     }},
     {field: "rtt", title: "RTT", width: 100, visible: false},
     {field: "dropped", title: "Dropped", width: 100, sorter: "number", visible: false, formatter: function(cell) {
         return formatNumber(cell.getValue() || 0);
     }},
-    {field: "congestion", title: "Congestion", width: 150, formatter: function(cell) {
+    {field: "congestion", title: "Congestion", width: 150, visible: false, formatter: function(cell) {
         const value = cell.getValue();
         return value ? formatBytes(value) : '-';
     }},
-    {field: "connectionId", title: "Connection ID", width: 200, cssClass: "conn-id"},
+    {field: "connectionId", title: "Connection ID", width: 200, visible: false, cssClass: "conn-id"},
     {field: "qlogUrl", title: "QLog", width: 100, formatter: function(cell) {
         const value = cell.getValue();
         if (value) {
@@ -45,6 +45,57 @@ const COLUMN_DEFINITIONS = [
         return value ? `<span class="status-error">${value}</span>` : '';
     }},
 ];
+
+/**
+ * Toggle column visibility
+ */
+function toggleColumn(field) {
+    if (table) {
+        const column = table.getColumn(field);
+        if (column.isVisible()) {
+            column.hide();
+        } else {
+            column.show();
+        }
+    }
+}
+
+/**
+ * Initialize column visibility controls
+ */
+function initColumnControls() {
+    const columnToggles = document.getElementById('columnToggles');
+    if (!columnToggles) return;
+    
+    columnToggles.innerHTML = '';
+    
+    COLUMN_DEFINITIONS.forEach(col => {
+        if (col.field === 'index' || col.field === 'error') return; // Skip # and error columns
+        
+        const label = document.createElement('label');
+        label.className = 'column-toggle';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = col.visible !== false;
+        checkbox.addEventListener('change', () => toggleColumn(col.field));
+        
+        const span = document.createElement('span');
+        span.textContent = col.title;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        columnToggles.appendChild(label);
+    });
+}
+
+/**
+ * Toggle column configuration panel
+ */
+function toggleColumnPanel() {
+    const panel = document.getElementById('columnPanel');
+    panel.classList.toggle('visible');
+}
 
 /**
  * Load settings from URL query parameters
@@ -338,6 +389,8 @@ async function startTest() {
 document.addEventListener('DOMContentLoaded', function() {
     // Load settings from URL on page load
     loadSettingsFromURL();
+    // Initialize column controls
+    initColumnControls();
     
     const handleEnter = function(e) {
         if (e.key === 'Enter') {

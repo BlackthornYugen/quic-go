@@ -80,10 +80,77 @@
         }
         #results {
             margin-top: 20px;
+            position: relative;
         }
         #resultsTable {
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .column-controls-wrapper {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .gear-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+        .gear-button:hover {
+            background: #45a049;
+        }
+        .column-panel {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 220px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .column-panel.visible {
+            display: block;
+        }
+        .column-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .column-toggle {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .column-toggle:hover {
+            background-color: #f0f0f0;
+        }
+        .column-toggle input {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+        .column-toggle span {
+            font-size: 14px;
+            color: #333;
+            user-select: none;
         }
         .tabulator .tabulator-header {
             background-color: #4CAF50;
@@ -164,6 +231,13 @@
     <div id="status"></div>
 
     <div id="results">
+        <div class="column-controls-wrapper">
+            <button class="gear-button" onclick="toggleColumnPanel()" title="Show/Hide Columns">⚙</button>
+            <div id="columnPanel" class="column-panel">
+                <h3>Show/Hide Columns</h3>
+                <div id="columnToggles"></div>
+            </div>
+        </div>
         <div id="resultsTable"></div>
     </div>
 
