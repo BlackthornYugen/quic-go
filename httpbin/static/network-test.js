@@ -207,6 +207,13 @@ function initializeTable() {
         initialSort: [{column: "index", dir: "asc"}],
         placeholder: "No test results yet",
     });
+    
+    // Show the column controls and initialize them
+    const controlsWrapper = document.querySelector('.column-controls-wrapper');
+    if (controlsWrapper) {
+        controlsWrapper.style.display = 'block';
+    }
+    initColumnControls();
 }
 
 /**
