@@ -23,6 +23,7 @@ const COLUMN_DEFINITIONS = [
     {field: "duration", title: "Duration", width: 120, sorter: "number", formatter: function(cell) {
         return cell.getValue().toFixed(2) + ' ms';
     }},
+    {field: "sourceIp", title: "Source IP", width: 150},
     {field: "rtt", title: "RTT", width: 100, visible: false},
     {field: "dropped", title: "Dropped", width: 100, sorter: "number", visible: false, formatter: function(cell) {
         return formatNumber(cell.getValue() || 0);
@@ -225,6 +226,7 @@ function resultToRowData(index, data, duration, error = null) {
             index: index,
             status: 'error',
             duration: duration,
+            sourceIp: '-',
             http3: false,
             rtt: '-',
             dropped: 0,
@@ -242,6 +244,7 @@ function resultToRowData(index, data, duration, error = null) {
         index: index,
         status: 'success',
         duration: duration,
+        sourceIp: data.origin || '-',
         http3: isHttp3,
         rtt: data.http3 ? (data.http3.rtt || 'N/A') : '-',
         dropped: data.http3 ? (data.http3.dropped_packets || 0) : 0,
