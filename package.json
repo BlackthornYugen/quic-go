@@ -1,0 +1,13 @@
+{
+  "name": "go-httpbin-static",
+  "version": "1.0.0",
+  "description": "Static assets for go-httpbin",
+  "private": true,
+  "scripts": {
+    "install-static": "npm install && npm run copy-deps",
+    "copy-deps": "mkdir -p httpbin/static && cp node_modules/tabulator-tables/dist/js/tabulator.min.js httpbin/static/ && cp node_modules/tabulator-tables/dist/css/tabulator.min.css httpbin/static/"
+  },
+  "dependencies": {
+    "tabulator-tables": "^6.3.0"
+  }
+}

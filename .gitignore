@@ -10,3 +10,6 @@ go-httpbin
 *.crt
 *.key
 qlogs/*
+node_modules/
+httpbin/static/tabulator.min.js
+httpbin/static/tabulator.min.css
