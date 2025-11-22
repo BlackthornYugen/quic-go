@@ -7,6 +7,8 @@ let wsLog = [];
 
 // Configuration constants
 const MAX_REQUESTS = 100000;
+const STORAGE_KEY_SORT = 'networkTest.sortOrder';
+const STORAGE_KEY_COLUMNS = 'networkTest.columnVisibility';
 
 // Column definitions for Tabulator
 const COLUMN_DEFINITIONS = [
@@ -75,6 +77,7 @@ function toggleColumn(field) {
         } else {
             column.show();
         }
+        saveColumnVisibility();
     }
 }
 
@@ -95,7 +98,16 @@ function initColumnControls() {
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.checked = col.visible !== false;
+
+        // Read actual column visibility from the table if it exists
+        if (table) {
+            const column = table.getColumn(col.field);
+            checkbox.checked = column.isVisible();
+        } else {
+            // Fallback to default if table not initialized yet
+            checkbox.checked = col.visible !== false;
+        }
+
         checkbox.addEventListener('change', () => toggleColumn(col.field));
 
         const span = document.createElement('span');
@@ -113,6 +125,66 @@ function initColumnControls() {
 function toggleColumnPanel() {
     const panel = document.getElementById('columnPanel');
     panel.classList.toggle('visible');
+}
+
+/**
+ * Save current column visibility to localStorage
+ */
+function saveColumnVisibility() {
+    if (!table) return;
+
+    const visibility = {};
+    COLUMN_DEFINITIONS.forEach(col => {
+        if (col.field === 'index' || col.field === 'error') return;
+        const column = table.getColumn(col.field);
+        visibility[col.field] = column.isVisible();
+    });
+
+    try {
+        localStorage.setItem(STORAGE_KEY_COLUMNS, JSON.stringify(visibility));
+    } catch (e) {
+        console.error('Failed to save column visibility:', e);
+    }
+}
+
+/**
+ * Load column visibility from localStorage
+ */
+function loadColumnVisibility() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY_COLUMNS);
+        return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+        console.error('Failed to load column visibility:', e);
+        return {};
+    }
+}
+
+/**
+ * Save current sort order to localStorage
+ */
+function saveSortOrder() {
+    if (!table) return;
+
+    const sorters = table.getSorters();
+    try {
+        localStorage.setItem(STORAGE_KEY_SORT, JSON.stringify(sorters));
+    } catch (e) {
+        console.error('Failed to save sort order:', e);
+    }
+}
+
+/**
+ * Load sort order from localStorage
+ */
+function loadSortOrder() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY_SORT);
+        return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+        console.error('Failed to load sort order:', e);
+        return null;
+    }
 }
 
 /**
@@ -246,20 +318,57 @@ function initializeTable() {
         table.destroy();
     }
 
+    // Load saved sort order, or use default
+    const savedSort = loadSortOrder();
+    const initialSort = savedSort && savedSort.length > 0
+        ? savedSort
+        : [{ column: "index", dir: "desc" }];
+
     table = new Tabulator("#resultsTable", {
         layout: "fitColumns",
         height: "500px",
         columns: COLUMN_DEFINITIONS,
-        initialSort: [{ column: "index", dir: "desc" }],
+        initialSort: initialSort,
         placeholder: "No test results yet",
     });
 
-    // Show the column controls and initialize them
-    const controlsWrapper = document.querySelector('.column-controls-wrapper');
-    if (controlsWrapper) {
-        controlsWrapper.style.display = 'block';
-    }
-    initColumnControls();
+    // Listen for sort changes and save them
+    table.on("dataSorted", function (sorters, rows) {
+        saveSortOrder();
+    });
+
+    // Wait for table to be fully built before restoring column visibility
+    table.on("tableBuilt", function () {
+        // Restore saved column visibility BEFORE initializing controls
+        const savedVisibility = loadColumnVisibility();
+
+        // Apply visibility to all columns
+        COLUMN_DEFINITIONS.forEach(col => {
+            if (col.field === 'index' || col.field === 'error') return; // Skip # and error columns
+
+            const column = table.getColumn(col.field);
+            if (column) {
+                // Use saved visibility if available, otherwise use default from column definition
+                const shouldBeVisible = savedVisibility.hasOwnProperty(col.field)
+                    ? savedVisibility[col.field]
+                    : (col.visible !== false);
+
+                if (shouldBeVisible) {
+                    column.show();
+                } else {
+                    column.hide();
+                }
+            }
+        });
+
+        // Show the column controls and initialize them
+        // This will now read the actual column visibility state from the table
+        const controlsWrapper = document.querySelector('.column-controls-wrapper');
+        if (controlsWrapper) {
+            controlsWrapper.style.display = 'block';
+        }
+        initColumnControls();
+    });
 }
 
 /**
@@ -394,8 +503,12 @@ async function startTest() {
     button.disabled = true;
     button.textContent = 'Test in Progress...';
 
-    // Initialize or clear table
-    initializeTable();
+    // Clear table data but keep column visibility and sort settings
+    if (!table) {
+        initializeTable();
+    } else {
+        table.clearData();
+    }
 
     const delayText = requestDelay > 0 || delayIncrement > 0
         ? ` with ${requestDelay}ms initial delay${delayIncrement > 0 ? ` (+${delayIncrement}ms/req)` : ''} between requests`
@@ -645,8 +758,8 @@ window.onclick = function (event) {
 document.addEventListener('DOMContentLoaded', function () {
     // Load settings from URL on page load
     loadSettingsFromURL();
-    // Initialize column controls
-    initColumnControls();
+    // Initialize table on page load so saved preferences can be restored
+    initializeTable();
     // Initialize share link
     updateShareLink(window.location.pathname + window.location.search);
 
