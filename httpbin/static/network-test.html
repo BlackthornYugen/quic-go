@@ -12,71 +12,88 @@
 <body>
     <h1>Network Test - HTTP/3 Statistics</h1>
 
-    <div class="config">
-        <div class="config-row">
-            <label for="requestCount">Number of requests:</label>
-            <input type="number" id="requestCount" min="1" max="" value="5">
+
+    <!-- WebSocket Section -->
+    <section class="test-section">
+        <h2>WebSocket Heartbeat</h2>
+
+        <div class="config" style="text-align: center;">
+            <button id="toggleWebSocket" onclick="toggleWebSocket()">Start WebSocket Heartbeat</button>
+            <button id="showStats" onclick="toggleStatsModal()" style="display: none;">Show Stats/Log</button>
         </div>
 
-        <div class="config-row">
-            <label for="requestDelay">Initial delay between requests (ms):</label>
-            <input type="number" id="requestDelay" min="0" max="10000" value="20">
+        <div id="wsStatus"></div>
+
+        <div id="wsLatestResponse" class="config" style="display: none;">
+            <h3>Latest WebSocket Response:</h3>
+            <textarea id="wsLatestContent" readonly
+                style="width: 100%; box-sizing: border-box; resize: vertical; min-height: 150px;"></textarea>
         </div>
 
-        <div class="config-row">
-            <label for="delayIncrement">Delay increment per request (ms):</label>
-            <input type="number" id="delayIncrement" min="0" max="10000" value="0">
-        </div>
-
-        <div class="config-row">
-            <label for="endpointDelay">Initial endpoint delay (seconds):</label>
-            <input type="number" id="endpointDelay" min="0" max="900" value="10" step="1">
-        </div>
-
-        <div class="config-row">
-            <label for="endpointDelayIncrement">Endpoint delay increment (seconds):</label>
-            <input type="number" id="endpointDelayIncrement" min="0" max="10" value="0" step="1">
-        </div>
-    </div>
-
-    <div id="controls" class="config" style="text-align: center;">
-        <button id="startTest" onclick="startTest()">Start Test</button>
-        <button id="toggleWebSocket" onclick="toggleWebSocket()">Start WebSocket Heartbeat</button>
-        <button id="showStats" onclick="toggleStatsModal()" style="display: none;">Show Stats/Log</button>
-    </div>
-    <div id="wsLatestResponse" class="config" style="display: none;">
-        <h3>Latest WebSocket Response:</h3>
-        <textarea id="wsLatestContent" readonly
-            style="width: 100%; box-sizing: border-box; resize: vertical; min-height: 150px;"></textarea>
-    </div>
-
-    <div id="statsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="toggleStatsModal()">&times;</span>
-            <h2>WebSocket Log</h2>
-            <div id="wsLog" class="ws-log"></div>
-        </div>
-    </div>
-
-    <div class="share-section">
-        <label for="shareLink">Share this configuration:</label>
-        <a id="shareLink" href="#" class="share-link" title="Long press to share">Loading...</a>
-    </div>
-
-    <div id="status"></div>
-
-    <div id="results">
-        <div class="column-controls-wrapper">
-            <button class="gear-button" onclick="toggleColumnPanel()" title="Show/Hide Columns">
-                <img src="/static/gear-icon.svg" alt="Settings" width="20" height="20">
-            </button>
-            <div id="columnPanel" class="column-panel">
-                <h3>Show/Hide Columns</h3>
-                <div id="columnToggles"></div>
+        <div id="statsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="toggleStatsModal()">&times;</span>
+                <h2>WebSocket Log</h2>
+                <div id="wsLog" class="ws-log"></div>
             </div>
         </div>
-        <div id="resultsTable"></div>
-    </div>
+    </section>
+
+    <!-- Delay Test Section -->
+    <section class="test-section">
+        <h2>Delay Test</h2>
+
+        <div class="config">
+            <div class="config-row">
+                <label for="requestCount">Number of requests:</label>
+                <input type="number" id="requestCount" min="1" max="" value="5">
+            </div>
+
+            <div class="config-row">
+                <label for="requestDelay">Initial delay between requests (ms):</label>
+                <input type="number" id="requestDelay" min="0" max="10000" value="20">
+            </div>
+
+            <div class="config-row">
+                <label for="delayIncrement">Delay increment per request (ms):</label>
+                <input type="number" id="delayIncrement" min="0" max="10000" value="0">
+            </div>
+
+            <div class="config-row">
+                <label for="endpointDelay">Initial endpoint delay (seconds):</label>
+                <input type="number" id="endpointDelay" min="0" max="900" value="10" step="1">
+            </div>
+
+            <div class="config-row">
+                <label for="endpointDelayIncrement">Endpoint delay increment (seconds):</label>
+                <input type="number" id="endpointDelayIncrement" min="0" max="10" value="0" step="1">
+            </div>
+        </div>
+
+        <div class="config" style="text-align: center;">
+            <button id="startTest" onclick="startTest()">Start Test</button>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="share-section">
+            <label for="shareLink">Share this configuration:</label>
+            <a id="shareLink" href="#" class="share-link" title="Long press to share">Loading...</a>
+        </div>
+
+        <div id="results">
+            <div class="column-controls-wrapper">
+                <button class="gear-button" onclick="toggleColumnPanel()" title="Show/Hide Columns">
+                    <img src="/static/gear-icon.svg" alt="Settings" width="20" height="20">
+                </button>
+                <div id="columnPanel" class="column-panel">
+                    <h3>Show/Hide Columns</h3>
+                    <div id="columnToggles"></div>
+                </div>
+            </div>
+            <div id="resultsTable"></div>
+        </div>
+    </section>
 
     <script src="/static/tabulator.min.js"></script>
     <script src="/static/network-test.js"></script>

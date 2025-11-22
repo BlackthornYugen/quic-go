@@ -458,6 +458,15 @@ function updateStatus(message, isError = false) {
 }
 
 /**
+ * Updates the WebSocket status message
+ */
+function updateWsStatus(message, isError = false) {
+    const statusElement = document.getElementById('wsStatus');
+    statusElement.textContent = message;
+    statusElement.className = isError ? 'error' : 'success';
+}
+
+/**
  * Sleep for a specified number of milliseconds
  */
 function sleep(ms) {
@@ -589,7 +598,7 @@ function toggleWebSocket() {
         ws = null;
         wsHeartbeatInterval = null;
         button.textContent = 'Start WebSocket Heartbeat';
-        updateStatus('WebSocket connection closed');
+        updateWsStatus('WebSocket connection closed');
         return;
     }
 
@@ -610,7 +619,7 @@ function toggleWebSocket() {
         ws = new WebSocket(wsUrl);
 
         ws.onopen = function () {
-            updateStatus('WebSocket connected');
+            updateWsStatus('WebSocket connected');
             button.textContent = 'Stop WebSocket Heartbeat';
             addToLog('Connected to ' + wsUrl, 'system');
 
@@ -655,7 +664,7 @@ function toggleWebSocket() {
 
         ws.onerror = function (error) {
             console.error('WebSocket error:', error);
-            updateStatus('WebSocket error', true);
+            updateWsStatus('WebSocket error', true);
             addToLog('Error: ' + error, 'system');
         };
 
@@ -666,7 +675,7 @@ function toggleWebSocket() {
                 ws = null;
                 wsHeartbeatInterval = null;
                 button.textContent = 'Start WebSocket Heartbeat';
-                updateStatus('WebSocket connection closed unexpectedly', true);
+                updateWsStatus('WebSocket connection closed unexpectedly', true);
                 addToLog('Connection closed unexpectedly', 'system');
             } else {
                 addToLog('Connection closed', 'system');
@@ -675,7 +684,7 @@ function toggleWebSocket() {
 
     } catch (e) {
         console.error('Failed to create WebSocket:', e);
-        updateStatus(`Failed to create WebSocket: ${e.message}`, true);
+        updateWsStatus(`Failed to create WebSocket: ${e.message}`, true);
     }
 }
 
