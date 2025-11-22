@@ -105,21 +105,34 @@ function loadSettingsFromURL() {
     const params = new URLSearchParams(window.location.search);
     
     if (params.has('count')) {
-        document.getElementById('requestCount').value = params.get('count');
+        const value = params.get('count');
+        if (value !== null && value !== '') {
+            document.getElementById('requestCount').value = value;
+        }
     }
     if (params.has('delay')) {
-        document.getElementById('requestDelay').value = params.get('delay');
+        const value = params.get('delay');
+        if (value !== null && value !== '') {
+            document.getElementById('requestDelay').value = value;
+        }
     }
     if (params.has('delayInc')) {
-        document.getElementById('delayIncrement').value = params.get('delayInc');
+        const value = params.get('delayInc');
+        if (value !== null && value !== '') {
+            document.getElementById('delayIncrement').value = value;
+        }
     }
     if (params.has('endpoint')) {
         const value = params.get('endpoint');
-        document.getElementById('endpointDelay').value = value;
-        document.getElementById('endpointDelayValue').textContent = value;
+        if (value !== null && value !== '') {
+            document.getElementById('endpointDelay').value = value;
+        }
     }
     if (params.has('endpointInc')) {
-        document.getElementById('endpointDelayIncrement').value = params.get('endpointInc');
+        const value = params.get('endpointInc');
+        if (value !== null && value !== '') {
+            document.getElementById('endpointDelayIncrement').value = value;
+        }
     }
 }
 
@@ -135,18 +148,21 @@ function updateURL() {
     const endpointDelay = document.getElementById('endpointDelay').value;
     const endpointDelayIncrement = document.getElementById('endpointDelayIncrement').value;
     
-    // Only add non-default values to keep URL clean
-    if (requestCount !== '5') params.set('count', requestCount);
-    if (requestDelay !== '20') params.set('delay', requestDelay);
-    if (delayIncrement !== '0') params.set('delayInc', delayIncrement);
-    if (endpointDelay !== '10') params.set('endpoint', endpointDelay);
-    if (endpointDelayIncrement !== '0') params.set('endpointInc', endpointDelayIncrement);
+    // Always include all values to ensure complete state is preserved
+    if (requestCount !== null && requestCount !== '') params.set('count', requestCount);
+    if (requestDelay !== null && requestDelay !== '') params.set('delay', requestDelay);
+    if (delayIncrement !== null && delayIncrement !== '') params.set('delayInc', delayIncrement);
+    if (endpointDelay !== null && endpointDelay !== '') params.set('endpoint', endpointDelay);
+    if (endpointDelayIncrement !== null && endpointDelayIncrement !== '') params.set('endpointInc', endpointDelayIncrement);
     
     const queryString = params.toString();
     const newURL = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
     
     // Update URL without reloading page
     window.history.replaceState({}, '', newURL);
+    
+    // Update share link
+    updateShareLink(newURL);
 }
 
 /**
@@ -191,6 +207,18 @@ function extractConnectionId(qlogUrl) {
 function buildQvisLink(qlogUrl) {
     if (!qlogUrl) return null;
     return 'https://qvis.quictools.info/#/sequence?file=' + encodeURIComponent(qlogUrl);
+}
+
+/**
+ * Update the share link with current URL
+ */
+function updateShareLink(url) {
+    const shareLink = document.getElementById('shareLink');
+    if (shareLink) {
+        const fullUrl = window.location.origin + url;
+        shareLink.href = fullUrl;
+        shareLink.textContent = fullUrl;
+    }
 }
 
 /**
@@ -421,6 +449,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSettingsFromURL();
     // Initialize column controls
     initColumnControls();
+    // Initialize share link
+    updateShareLink(window.location.pathname + window.location.search);
     
     const handleEnter = function(e) {
         if (e.key === 'Enter') {
