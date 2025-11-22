@@ -205,7 +205,7 @@ function initializeTable() {
         layout: "fitColumns",
         height: "500px",
         columns: COLUMN_DEFINITIONS,
-        initialSort: [{column: "index", dir: "asc"}],
+        initialSort: [{column: "index", dir: "desc"}],
         placeholder: "No test results yet",
     });
     
@@ -372,7 +372,14 @@ async function startTest() {
         // Wrap each request to display results as they complete
         const promise = performRequest(i, currentEndpointDelay).then(result => {
             const rowData = resultToRowData(result.index, result.data, result.duration, result.error);
+            // Add row
             table.addRow(rowData);
+            // Maintain current sort order by reapplying sort if one is active
+            // This ensures new rows appear in the correct sorted position
+            const currentSort = table.getSorters();
+            if (currentSort && currentSort.length > 0) {
+                table.setSort(currentSort);
+            }
             return result;
         });
         
