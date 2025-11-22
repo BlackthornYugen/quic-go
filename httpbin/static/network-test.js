@@ -282,8 +282,8 @@ function resultToRowData(index, data, duration, error = null) {
         };
     }
 
-    const isHttp3 = data.http3 && data.http3.protocol && data.http3.protocol.toLowerCase().includes('http/3');
-    const connectionId = data.http3 ? extractConnectionId(data.http3.qlog_url) : null;
+    const isHttp3 = data.connection_info && data.connection_info.protocol && data.connection_info.protocol.toLowerCase().includes('http/3');
+    const connectionId = data.connection_info ? extractConnectionId(data.connection_info.qlog_url) : null;
 
     return {
         index: index,
@@ -291,11 +291,11 @@ function resultToRowData(index, data, duration, error = null) {
         duration: duration,
         sourceIp: data.origin || '-',
         http3: isHttp3,
-        rtt: data.http3 ? (data.http3.rtt || 'N/A') : '-',
-        dropped: data.http3 ? (data.http3.dropped_packets || 0) : 0,
-        congestion: data.http3 ? data.http3.congestion_window : null,
-        connectionId: connectionId || '-',
-        qlogUrl: data.http3 ? data.http3.qlog_url : null,
+        rtt: data.connection_info ? (data.connection_info.rtt || 'N/A') : '-',
+        dropped: data.connection_info ? (data.connection_info.dropped_packets || 0) : 0,
+        congestion: data.connection_info ? data.connection_info.congestion_window : null,
+        connectionId: connectionId,
+        qlogUrl: data.connection_info ? data.connection_info.qlog_url : null,
         error: null
     };
 }
