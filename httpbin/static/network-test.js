@@ -531,15 +531,12 @@ function toggleWebSocket() {
             // Add to log
             addToLog(content, 'recv');
 
-            // Try to parse HTTP/3 info
-            try {
-                const data = JSON.parse(content);
-                if (data.http3) {
-                    // Could update a specific HTTP/3 display here if we had one
-                    // For now, the JSON response is visible in the latest content area
-                }
-            } catch (e) {
-                // Ignore parsing errors
+            // Check for HTTP/3 info (now called connection_info)
+            if (jsonContent && jsonContent.connection_info) {
+                const info = jsonContent.connection_info;
+                const rtt = info.rtt || "N/A";
+                // Could update a specific HTTP/3 display here if we had one
+                // For now, the JSON response is visible in the latest content area
             }
         };
 

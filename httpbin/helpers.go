@@ -112,10 +112,10 @@ func getURL(r *http.Request) *url.URL {
 // Currently returns basic protocol information. For detailed statistics like
 // dropped packets and RTT, QUIC connection tracing would need to be enabled
 // when creating the HTTP/3 server.
-func getHTTP3Info(r *http.Request) *HTTP3Info {
+func getHTTP3Info(r *http.Request) *ConnectionInfo {
 	// Check if this is an HTTP/3 request
 	if r.ProtoMajor == 3 {
-		return &HTTP3Info{
+		return &ConnectionInfo{
 			Protocol:       r.Proto,
 			DroppedPackets: 0, // Requires connection tracer - see getHTTP3InfoFromWriter
 			RTT:            "0s", // Requires connection tracer - see getHTTP3InfoFromWriter
@@ -127,15 +127,11 @@ func getHTTP3Info(r *http.Request) *HTTP3Info {
 
 // getHTTP3InfoFromWriter extracts QUIC connection statistics from an HTTP/3 response writer
 // This provides access to the underlying QUIC connection for more detailed statistics
-func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *HTTP3Info {
-	// Check if this is an HTTP/3 request
-	if r.ProtoMajor != 3 {
-		return nil
-	}
+func getHTTP3InfoFromWriter(w http.ResponseWriter, r *http.Request) *ConnectionInfo {
+	// We don't check r.ProtoMajor == 3 here because we want to try to get stats
+	// even if the protocol is not reported as HTTP/3 (e.g. WebSockets over QUIC)
 	
-	fmt.Printf("DEBUG getHTTP3InfoFromWriter: HTTP/3 request detected, Proto=%s\n", r.Proto)
-	
-	info := &HTTP3Info{
+	info := &ConnectionInfo{
 		Protocol:       r.Proto,
 		DroppedPackets: 0,
 		RTT:            "0s",

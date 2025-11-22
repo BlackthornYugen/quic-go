@@ -1381,13 +1381,13 @@ func (h *HTTPBin) WebSocketHTTP3Info(w http.ResponseWriter, r *http.Request) {
 	// Create a handler that returns the HTTP/3 info + timestamp + request details
 	handler := func(ctx context.Context, msg *websocket.Message) (*websocket.Message, error) {
 		response := struct {
-			Args      url.Values  `json:"args"`
-			Headers   http.Header `json:"headers"`
-			Origin    string      `json:"origin"`
-			URL       string      `json:"url"`
-			Timestamp int64       `json:"timestamp"`
-			HTTP3     *HTTP3Info  `json:"http3,omitempty"`
-			Message   string      `json:"message"`
+			Args      url.Values      `json:"args"`
+			Headers   http.Header     `json:"headers"`
+			Origin    string          `json:"origin"`
+			URL       string          `json:"url"`
+			Timestamp int64           `json:"timestamp"`
+			HTTP3     *ConnectionInfo `json:"connection_info,omitempty"`
+			Message   string          `json:"message"`
 		}{
 			Args:      args,
 			Headers:   headers,
