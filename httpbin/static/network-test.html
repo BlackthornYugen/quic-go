@@ -8,14 +8,6 @@
     <link href="/static/tabulator.min.css" rel="stylesheet">
     <link href="/static/network-test.css" rel="stylesheet">
     <style>
-        .ws-latest {
-            margin: 20px 0;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -116,14 +108,15 @@
         </div>
     </div>
 
-    <div class="controls">
-        <button id="startTest" onclick="startTest()">Start Network Test</button>
+    <div id="controls" class="config" style="text-align: center;">
+        <button id="startTest" onclick="startTest()">Start Test</button>
         <button id="toggleWebSocket" onclick="toggleWebSocket()">Start WebSocket Heartbeat</button>
         <button id="showStats" onclick="toggleStatsModal()" style="display: none;">Show Stats/Log</button>
     </div>
-
-    <div id="wsLatestResponse" class="ws-latest" style="display: none;">
-        <strong>Latest WebSocket Response:</strong> <span id="wsLatestContent">-</span>
+    <div id="wsLatestResponse" class="config" style="display: none;">
+        <h3>Latest WebSocket Response:</h3>
+        <textarea id="wsLatestContent" readonly
+            style="width: 100%; box-sizing: border-box; resize: vertical; min-height: 150px;"></textarea>
     </div>
 
     <div id="statsModal" class="modal">

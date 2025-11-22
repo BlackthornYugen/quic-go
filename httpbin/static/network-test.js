@@ -482,7 +482,7 @@ function toggleWebSocket() {
 
     // Start new connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/websocket/echo`;
+    const wsUrl = `${protocol}//${window.location.host}/websocket/http3-info${window.location.search}`;
 
     // Reset log
     wsLog = [];
@@ -517,10 +517,30 @@ function toggleWebSocket() {
         ws.onmessage = function (event) {
             // Update latest response
             const content = event.data;
-            document.getElementById('wsLatestContent').textContent = content;
+            let displayContent = content;
+            try {
+                const jsonContent = JSON.parse(content);
+                displayContent = JSON.stringify(jsonContent, null, 2);
+            } catch (e) {
+                // Not JSON, keep original
+            }
+            const textarea = document.getElementById('wsLatestContent');
+            textarea.value = displayContent;
+            textarea.scrollTop = textarea.scrollHeight;
 
             // Add to log
             addToLog(content, 'recv');
+
+            // Try to parse HTTP/3 info
+            try {
+                const data = JSON.parse(content);
+                if (data.http3) {
+                    // Could update a specific HTTP/3 display here if we had one
+                    // For now, the JSON response is visible in the latest content area
+                }
+            } catch (e) {
+                // Ignore parsing errors
+            }
         };
 
         ws.onerror = function (error) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1354,4 +1355,59 @@ func (h *HTTPBin) WebSocketEcho(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ws.Serve(websocket.EchoHandler)
+}
+
+// WebSocketHTTP3Info - websocket endpoint that returns HTTP/3 connection info
+func (h *HTTPBin) WebSocketHTTP3Info(w http.ResponseWriter, r *http.Request) {
+	// Get HTTP/3 info from the underlying connection before upgrading
+	http3Info := getHTTP3InfoFromWriter(w, r)
+
+	// Capture request details before upgrade
+	args := r.URL.Query()
+	headers := getRequestHeaders(r, h.excludeHeadersProcessor)
+	origin := getClientIP(r)
+	urlStr := getURL(r).String()
+
+	ws := websocket.New(w, r, websocket.Limits{
+		MaxDuration:     h.MaxDuration,
+		MaxFragmentSize: 1024 * 1024,
+		MaxMessageSize:  1024 * 1024,
+	})
+	if err := ws.Handshake(); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	// Create a handler that returns the HTTP/3 info + timestamp + request details
+	handler := func(ctx context.Context, msg *websocket.Message) (*websocket.Message, error) {
+		response := struct {
+			Args      url.Values  `json:"args"`
+			Headers   http.Header `json:"headers"`
+			Origin    string      `json:"origin"`
+			URL       string      `json:"url"`
+			Timestamp int64       `json:"timestamp"`
+			HTTP3     *HTTP3Info  `json:"http3,omitempty"`
+			Message   string      `json:"message"`
+		}{
+			Args:      args,
+			Headers:   headers,
+			Origin:    origin,
+			URL:       urlStr,
+			Timestamp: time.Now().UnixMilli(),
+			HTTP3:     http3Info,
+			Message:   string(msg.Payload),
+		}
+
+		payload, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+
+		return &websocket.Message{
+			Binary:  false,
+			Payload: payload,
+		}, nil
+	}
+
+	ws.Serve(handler)
 }

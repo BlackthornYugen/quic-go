@@ -154,6 +154,7 @@ func (h *HTTPBin) Handler() http.Handler {
 	}
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("GET /websocket/echo", h.WebSocketEcho)
+	mux.HandleFunc("GET /websocket/http3-info", h.WebSocketHTTP3Info)
 	mux.HandleFunc("HEAD /head", h.Get)
 	mux.HandleFunc("PATCH /patch", h.RequestWithBody)
 	mux.HandleFunc("POST /post", h.RequestWithBody)
