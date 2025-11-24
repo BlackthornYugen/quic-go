@@ -94,6 +94,11 @@ $ git clone https://github.com/BlackthornYugen/quic-go.git go-httpbin-http3
 $ cd go-httpbin-http3
 $ go build ./cmd/go-httpbin
 
+# Generate self-signed certificate for HTTPS/HTTP3
+$ openssl genrsa -out server.key 2048
+$ openssl ecparam -genkey -name secp384r1 -out server.key
+$ openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
+
 # Run with HTTP/3 enabled
 $ ./go-httpbin -host 127.0.0.1 -port 8443 -https-cert-file ./server.crt -https-key-file ./server.key -http3
 ```
