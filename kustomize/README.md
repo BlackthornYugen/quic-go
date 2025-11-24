@@ -8,9 +8,12 @@ kind: Kustomization
 commonLabels:
   app.kubernetes.io/name: httpbin
 resources:
-  - github.com/mccutchen/go-httpbin/kustomize
-images:
-  - name: mccutchen/go-httpbin
+  - github.com/BlackthornYugen/quic-go/kustomize
+# Optional: override the image to use a custom build
+# images:
+#   - name: mccutchen/go-httpbin
+#     newName: your-registry/go-httpbin
+#     newTag: http3
 ```
 
 To expose your instance to the internet, you could add an `Ingress` in an overlay:

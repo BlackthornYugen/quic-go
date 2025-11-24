@@ -1,26 +1,19 @@
-# go-httpbin
+# go-httpbin (HTTP/3 Fork)
 
-A reasonably complete and well-tested golang port of [Kenneth Reitz][kr]'s
-[httpbin][httpbin-org] service, with zero dependencies outside the go stdlib.
+This is a fork of [Kenneth Reitz][kr]'s [httpbin][httpbin-org] service, ported to Go by [mccutchen][upstream], with HTTP/3/QUIC support added.
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/mccutchen/go-httpbin/v2)](https://pkg.go.dev/github.com/mccutchen/go-httpbin/v2)
-[![Build status](https://github.com/mccutchen/go-httpbin/actions/workflows/ci.yaml/badge.svg)](https://github.com/mccutchen/go-httpbin/actions/workflows/ci.yaml)
-[![Coverage](https://codecov.io/gh/mccutchen/go-httpbin/branch/main/graph/badge.svg)](https://codecov.io/gh/mccutchen/go-httpbin)
-[![Docker Pulls](https://badgen.net/docker/pulls/mccutchen/go-httpbin?icon=docker&label=pulls)](https://hub.docker.com/r/mccutchen/go-httpbin/)
+[![Build status](https://github.com/BlackthornYugen/quic-go/actions/workflows/ci.yaml/badge.svg)](https://github.com/BlackthornYugen/quic-go/actions/workflows/ci.yaml)
+[![Coverage](https://codecov.io/gh/BlackthornYugen/quic-go/branch/main/graph/badge.svg)](https://codecov.io/gh/BlackthornYugen/quic-go)
 
 
 ## Usage
 
 ### Docker/OCI images
 
-Prebuilt images for the `linux/amd64` and `linux/arm64` architectures are
-automatically published to these public registries for every tagged release:
-- [ghcr.io/mccutchen/go-httpbin][ghcr] (recommended)
-- [mccutchen/go-httpbin][docker-hub]
+This fork does not currently publish pre-built Docker images. To build your own image with HTTP/3 support, see [Building and deploying custom images](#building-and-deploying-custom-images).
 
-```bash
-$ docker run -P ghcr.io/mccutchen/go-httpbin
-```
+For the original upstream version without HTTP/3, see [mccutchen/go-httpbin][upstream].
 
 > [!NOTE]
 > Prebuilt image versions >= 2.19.0 run as a non-root user by default. See
@@ -32,7 +25,7 @@ $ docker run -P ghcr.io/mccutchen/go-httpbin
 #### Using kustomize
 
 ```
-$ kubectl apply -k github.com/mccutchen/go-httpbin/kustomize
+$ kubectl apply -k github.com/BlackthornYugen/quic-go/kustomize
 ```
 
 See `./kustomize` directory for further information
@@ -50,16 +43,16 @@ Example with custom image and HTTPS on specific host IP:
 ```bash
 helm upgrade --install go-httpbin ./chart \
   --set image.name="docker.io/library/go-httpbin:http3" \
-  --set hostNetwork.hostIP="51.222.234.166" \
+  --set hostNetwork.hostIP="YOUR_NODE_IP" \
   --set hostNetwork.useHostPort=true \
   --set httpsEnabled=true \
   --set podSecurityContext.runAsUser=1000 \
   --set podSecurityContext.runAsGroup=1000 \
   --set podSecurityContext.fsGroup=1000 \
-  --set qlog.hostPath=/home/jsteel/www_root/jsteelkw.ca/qlogs \
-  --set qlog.publicPrefix=https://jsteelkw.ca/qlogs/ \
+  --set qlog.hostPath=/var/log/qlogs \
+  --set qlog.publicPrefix=https://example.com/qlogs/ \
   --set-json 'env=[{"name":"HTTP3","value":"true"},{"name":"HTTP3_ALT_SVC_PORT","value":"443"}]' \
-  --set-json 'volumes=[{"name":"certs","hostPath":{"path":"/home/jsteel/haproxy.secrets/var/lib/haproxy","type":"Directory"}}]' \
+  --set-json 'volumes=[{"name":"certs","hostPath":{"path":"/etc/ssl/certs","type":"Directory"}}]' \
   --set-json 'volumeMounts=[{"name":"certs","mountPath":"/certs","readOnly":true}]'
 ```
 
@@ -75,34 +68,39 @@ $ docker buildx build --platform linux/amd64 --load -t go-httpbin:http3 .
 $ docker save go-httpbin:http3 -o go-httpbin-http3.tar
 
 # Copy to remote server and import into containerd
-$ rsync -avz go-httpbin-http3.tar ubuntu.jskw.dev:~
-$ ssh ubuntu.jskw.dev 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
+$ rsync -avz go-httpbin-http3.tar your-server.example.com:~
+$ ssh your-server.example.com 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
 
 # Or do it all in one command:
 $ docker save go-httpbin:http3 -o go-httpbin-http3.tar && \
-  rsync -avz go-httpbin-http3.tar ubuntu.jskw.dev:~ && \
-  ssh ubuntu.jskw.dev 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
+  rsync -avz go-httpbin-http3.tar your-server.example.com:~ && \
+  ssh your-server.example.com 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
 ```
 
 ### Standalone binary
 
-Follow the [Installation](#installation) instructions to install go-httpbin as
-a standalone binary, or use `go run` to install it on demand:
+> [!NOTE]
+> To use this fork with HTTP/3 support, you'll need to build from source. 
+> Clone this repository and run `go build ./cmd/go-httpbin` or use the Helm/Kustomize deployments.
 
-Examples:
+Follow the [Installation](#installation) instructions to install go-httpbin as
+a standalone binary, or use `go run` to install it on demand.
+
+The examples below use the upstream version. To get HTTP/3 support, build from this fork:
 
 ```bash
-# Run http server
-$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8081
+# Clone and build this fork
+$ git clone https://github.com/BlackthornYugen/quic-go.git go-httpbin-http3
+$ cd go-httpbin-http3
+$ go build ./cmd/go-httpbin
 
-# Run https server
+# Generate self-signed certificate for HTTPS/HTTP3
 $ openssl genrsa -out server.key 2048
 $ openssl ecparam -genkey -name secp384r1 -out server.key
 $ openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
-$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8081 -https-cert-file ./server.crt -https-key-file ./server.key
 
-# Run https server with HTTP/3 enabled
-$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8443 -https-cert-file ./server.crt -https-key-file ./server.key -http3
+# Run with HTTP/3 enabled
+$ ./go-httpbin -host 127.0.0.1 -port 8443 -https-cert-file ./server.crt -https-key-file ./server.key -http3
 ```
 
 ### Unit testing helper library
@@ -214,6 +212,10 @@ deployments:
 
 ## Installation
 
+> [!NOTE]
+> These instructions install the upstream version without HTTP/3 support.
+> To get HTTP/3 support from this fork, build from source as shown in the [Standalone binary](#standalone-binary) section.
+
 To add go-httpbin as a dependency to an existing golang project (e.g. for use
 in unit tests):
 
@@ -221,7 +223,7 @@ in unit tests):
 go get -u github.com/mccutchen/go-httpbin/v2
 ```
 
-To install the `go-httpbin` binary:
+To install the upstream `go-httpbin` binary:
 
 ```
 go install github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest
@@ -341,5 +343,6 @@ Compared to [ahmetb/go-httpbin][ahmet]:
 [Observer]: https://pkg.go.dev/github.com/mccutchen/go-httpbin/v2/httpbin#Observer
 [Production considerations]: #production-considerations
 [SECURITY.md]: ./SECURITY.md
+[upstream]: https://github.com/mccutchen/go-httpbin
 [zerolog]: https://github.com/rs/zerolog
 [lfreleng-actions/go-httpbin-action]: https://github.com/lfreleng-actions/go-httpbin-action/

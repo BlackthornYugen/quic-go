@@ -109,5 +109,5 @@ linux/arm64 architectures.
 [revive]: https://github.com/mgechev/revive
 [staticcheck]: https://staticcheck.dev/
 [Release]: /.github/workflows/release.yaml
-[Codecov]: https://app.codecov.io/gh/mccutchen/go-httpbin
+[Codecov]: https://app.codecov.io/gh/BlackthornYugen/quic-go
 [Autobahn Testsuite]: https://github.com/crossbario/autobahn-testsuite

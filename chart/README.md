@@ -155,7 +155,7 @@ When `qlog.publicPrefix` is configured, JSON responses will include a `qlog_visu
     "protocol": "HTTP/3.0",
     "rtt": "25ms",
     "dropped_packets": 0,
-    "qlog_visualization_link": "https://qvis.quictools.info/?file=https://jsteelkw.ca/qlogs/e3788a33642554b4_server.sqlog#/sequence?file=https%3A%2F%2Fjsteelkw.ca%2Fqlogs%2Fe3788a33642554b4_server.sqlog"
+    "qlog_visualization_link": "https://qvis.quictools.info/?file=https://example.com/qlogs/e3788a33642554b4_server.sqlog#/sequence?file=https%3A%2F%2Fexample.com%2Fqlogs%2Fe3788a33642554b4_server.sqlog"
   }
 }
 ```
