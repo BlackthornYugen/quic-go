@@ -4,8 +4,8 @@ A reasonably complete and well-tested golang port of [Kenneth Reitz][kr]'s
 [httpbin][httpbin-org] service, with zero dependencies outside the go stdlib.
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/mccutchen/go-httpbin/v2)](https://pkg.go.dev/github.com/mccutchen/go-httpbin/v2)
-[![Build status](https://github.com/mccutchen/go-httpbin/actions/workflows/ci.yaml/badge.svg)](https://github.com/mccutchen/go-httpbin/actions/workflows/ci.yaml)
-[![Coverage](https://codecov.io/gh/mccutchen/go-httpbin/branch/main/graph/badge.svg)](https://codecov.io/gh/mccutchen/go-httpbin)
+[![Build status](https://github.com/BlackthornYugen/quic-go/actions/workflows/ci.yaml/badge.svg)](https://github.com/BlackthornYugen/quic-go/actions/workflows/ci.yaml)
+[![Coverage](https://codecov.io/gh/BlackthornYugen/quic-go/branch/main/graph/badge.svg)](https://codecov.io/gh/BlackthornYugen/quic-go)
 [![Docker Pulls](https://badgen.net/docker/pulls/mccutchen/go-httpbin?icon=docker&label=pulls)](https://hub.docker.com/r/mccutchen/go-httpbin/)
 
 
@@ -13,14 +13,13 @@ A reasonably complete and well-tested golang port of [Kenneth Reitz][kr]'s
 
 ### Docker/OCI images
 
-Prebuilt images for the `linux/amd64` and `linux/arm64` architectures are
-automatically published to these public registries for every tagged release:
-- [ghcr.io/mccutchen/go-httpbin][ghcr] (recommended)
-- [mccutchen/go-httpbin][docker-hub]
+Run go-httpbin using Docker:
 
 ```bash
 $ docker run -P ghcr.io/mccutchen/go-httpbin
 ```
+
+For the original upstream version, see [mccutchen/go-httpbin][ghcr]. This fork adds HTTP/3 support.
 
 > [!NOTE]
 > Prebuilt image versions >= 2.19.0 run as a non-root user by default. See
@@ -32,7 +31,7 @@ $ docker run -P ghcr.io/mccutchen/go-httpbin
 #### Using kustomize
 
 ```
-$ kubectl apply -k github.com/mccutchen/go-httpbin/kustomize
+$ kubectl apply -k github.com/BlackthornYugen/quic-go/kustomize
 ```
 
 See `./kustomize` directory for further information
@@ -50,16 +49,16 @@ Example with custom image and HTTPS on specific host IP:
 ```bash
 helm upgrade --install go-httpbin ./chart \
   --set image.name="docker.io/library/go-httpbin:http3" \
-  --set hostNetwork.hostIP="51.222.234.166" \
+  --set hostNetwork.hostIP="YOUR_NODE_IP" \
   --set hostNetwork.useHostPort=true \
   --set httpsEnabled=true \
   --set podSecurityContext.runAsUser=1000 \
   --set podSecurityContext.runAsGroup=1000 \
   --set podSecurityContext.fsGroup=1000 \
-  --set qlog.hostPath=/home/jsteel/www_root/jsteelkw.ca/qlogs \
-  --set qlog.publicPrefix=https://jsteelkw.ca/qlogs/ \
+  --set qlog.hostPath=/var/log/qlogs \
+  --set qlog.publicPrefix=https://example.com/qlogs/ \
   --set-json 'env=[{"name":"HTTP3","value":"true"},{"name":"HTTP3_ALT_SVC_PORT","value":"443"}]' \
-  --set-json 'volumes=[{"name":"certs","hostPath":{"path":"/home/jsteel/haproxy.secrets/var/lib/haproxy","type":"Directory"}}]' \
+  --set-json 'volumes=[{"name":"certs","hostPath":{"path":"/etc/ssl/certs","type":"Directory"}}]' \
   --set-json 'volumeMounts=[{"name":"certs","mountPath":"/certs","readOnly":true}]'
 ```
 
@@ -75,13 +74,13 @@ $ docker buildx build --platform linux/amd64 --load -t go-httpbin:http3 .
 $ docker save go-httpbin:http3 -o go-httpbin-http3.tar
 
 # Copy to remote server and import into containerd
-$ rsync -avz go-httpbin-http3.tar ubuntu.jskw.dev:~
-$ ssh ubuntu.jskw.dev 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
+$ rsync -avz go-httpbin-http3.tar your-server.example.com:~
+$ ssh your-server.example.com 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
 
 # Or do it all in one command:
 $ docker save go-httpbin:http3 -o go-httpbin-http3.tar && \
-  rsync -avz go-httpbin-http3.tar ubuntu.jskw.dev:~ && \
-  ssh ubuntu.jskw.dev 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
+  rsync -avz go-httpbin-http3.tar your-server.example.com:~ && \
+  ssh your-server.example.com 'sudo ctr --namespace k8s.io images import ~/go-httpbin-http3.tar'
 ```
 
 ### Standalone binary

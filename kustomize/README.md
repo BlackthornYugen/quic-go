@@ -8,7 +8,7 @@ kind: Kustomization
 commonLabels:
   app.kubernetes.io/name: httpbin
 resources:
-  - github.com/mccutchen/go-httpbin/kustomize
+  - github.com/BlackthornYugen/quic-go/kustomize
 images:
   - name: mccutchen/go-httpbin
 ```
