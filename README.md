@@ -90,8 +90,8 @@ The examples below use the upstream version. To get HTTP/3 support, build from t
 
 ```bash
 # Clone and build this fork
-$ git clone https://github.com/BlackthornYugen/quic-go.git
-$ cd quic-go
+$ git clone https://github.com/BlackthornYugen/quic-go.git go-httpbin-http3
+$ cd go-httpbin-http3
 $ go build ./cmd/go-httpbin
 
 # Run with HTTP/3 enabled
