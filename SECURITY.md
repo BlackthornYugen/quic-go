@@ -44,5 +44,5 @@ reported issue and maintainer availability.
 
 Thank you for helping keep go-httpbin and its users secure!
 
-[1]: https://github.com/BlackthornYugen/quic-go/security/advisories/new
-[2]: https://github.com/BlackthornYugen/quic-go/releases
+[1]: https://github.com/mccutchen/go-httpbin/security/advisories/new
+[2]: https://github.com/mccutchen/go-httpbin/releases
