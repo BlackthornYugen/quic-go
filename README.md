@@ -79,23 +79,23 @@ $ docker save go-httpbin:http3 -o go-httpbin-http3.tar && \
 
 ### Standalone binary
 
-Follow the [Installation](#installation) instructions to install go-httpbin as
-a standalone binary, or use `go run` to install it on demand:
+> [!NOTE]
+> To use this fork with HTTP/3 support, you'll need to build from source. 
+> Clone this repository and run `go build ./cmd/go-httpbin` or use the Helm/Kustomize deployments.
 
-Examples:
+Follow the [Installation](#installation) instructions to install go-httpbin as
+a standalone binary, or use `go run` to install it on demand.
+
+The examples below use the upstream version. To get HTTP/3 support, build from this fork:
 
 ```bash
-# Run http server
-$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8081
+# Clone and build this fork
+$ git clone https://github.com/BlackthornYugen/quic-go.git
+$ cd quic-go
+$ go build ./cmd/go-httpbin
 
-# Run https server
-$ openssl genrsa -out server.key 2048
-$ openssl ecparam -genkey -name secp384r1 -out server.key
-$ openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
-$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8081 -https-cert-file ./server.crt -https-key-file ./server.key
-
-# Run https server with HTTP/3 enabled
-$ go run github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest -host 127.0.0.1 -port 8443 -https-cert-file ./server.crt -https-key-file ./server.key -http3
+# Run with HTTP/3 enabled
+$ ./go-httpbin -host 127.0.0.1 -port 8443 -https-cert-file ./server.crt -https-key-file ./server.key -http3
 ```
 
 ### Unit testing helper library
@@ -207,6 +207,10 @@ deployments:
 
 ## Installation
 
+> [!NOTE]
+> These instructions install the upstream version without HTTP/3 support.
+> To get HTTP/3 support from this fork, build from source as shown in the [Standalone binary](#standalone-binary) section.
+
 To add go-httpbin as a dependency to an existing golang project (e.g. for use
 in unit tests):
 
@@ -214,7 +218,7 @@ in unit tests):
 go get -u github.com/mccutchen/go-httpbin/v2
 ```
 
-To install the `go-httpbin` binary:
+To install the upstream `go-httpbin` binary:
 
 ```
 go install github.com/mccutchen/go-httpbin/v2/cmd/go-httpbin@latest
