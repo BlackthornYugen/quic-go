@@ -1,25 +1,19 @@
-# go-httpbin
+# go-httpbin (HTTP/3 Fork)
 
-A reasonably complete and well-tested golang port of [Kenneth Reitz][kr]'s
-[httpbin][httpbin-org] service, with zero dependencies outside the go stdlib.
+This is a fork of [Kenneth Reitz][kr]'s [httpbin][httpbin-org] service, ported to Go by [mccutchen][upstream], with HTTP/3/QUIC support added.
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/mccutchen/go-httpbin/v2)](https://pkg.go.dev/github.com/mccutchen/go-httpbin/v2)
 [![Build status](https://github.com/BlackthornYugen/quic-go/actions/workflows/ci.yaml/badge.svg)](https://github.com/BlackthornYugen/quic-go/actions/workflows/ci.yaml)
 [![Coverage](https://codecov.io/gh/BlackthornYugen/quic-go/branch/main/graph/badge.svg)](https://codecov.io/gh/BlackthornYugen/quic-go)
-[![Docker Pulls](https://badgen.net/docker/pulls/mccutchen/go-httpbin?icon=docker&label=pulls)](https://hub.docker.com/r/mccutchen/go-httpbin/)
 
 
 ## Usage
 
 ### Docker/OCI images
 
-Run go-httpbin using Docker:
+This fork does not currently publish pre-built Docker images. To build your own image with HTTP/3 support, see [Building and deploying custom images](#building-and-deploying-custom-images).
 
-```bash
-$ docker run -P ghcr.io/mccutchen/go-httpbin
-```
-
-For the original upstream version, see [mccutchen/go-httpbin][ghcr]. This fork adds HTTP/3 support.
+For the original upstream version without HTTP/3, see [mccutchen/go-httpbin][upstream].
 
 > [!NOTE]
 > Prebuilt image versions >= 2.19.0 run as a non-root user by default. See
@@ -340,5 +334,6 @@ Compared to [ahmetb/go-httpbin][ahmet]:
 [Observer]: https://pkg.go.dev/github.com/mccutchen/go-httpbin/v2/httpbin#Observer
 [Production considerations]: #production-considerations
 [SECURITY.md]: ./SECURITY.md
+[upstream]: https://github.com/mccutchen/go-httpbin
 [zerolog]: https://github.com/rs/zerolog
 [lfreleng-actions/go-httpbin-action]: https://github.com/lfreleng-actions/go-httpbin-action/
