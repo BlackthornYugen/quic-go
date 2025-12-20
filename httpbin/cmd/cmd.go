@@ -110,6 +110,9 @@ func mainImpl(args []string, getEnvVal func(string) string, getEnviron func() []
 		httpbin.WithObserver(httpbin.StdLogObserver(logger)),
 		httpbin.WithExcludeHeaders(cfg.ExcludeHeaders),
 	}
+	if cfg.QvisURL != "" {
+		opts = append(opts, httpbin.WithQvisURL(cfg.QvisURL))
+	}
 	if cfg.Prefix != "" {
 		opts = append(opts, httpbin.WithPrefix(cfg.Prefix))
 	}
@@ -168,6 +171,7 @@ type config struct {
 	HTTP3AltSvcPort        int
 	QLogDir                string
 	QLogPublicPrefix       string
+	QvisURL                string
 	LogFormat              string
 	SrvMaxHeaderBytes      int
 	SrvReadHeaderTimeout   time.Duration
@@ -221,6 +225,7 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	fs.IntVar(&cfg.HTTP3AltSvcPort, "http3-alt-svc-port", 0, "Port to advertise in Alt-Svc header (defaults to HTTPS port)")
 	fs.StringVar(&cfg.QLogDir, "qlog-dir", "", "Directory to save qlog files for HTTP/3 connections (enables connection tracing)")
 	fs.StringVar(&cfg.QLogPublicPrefix, "qlog-public-prefix", "", "Public URL prefix for qlog files (e.g., https://example.com/qlogs/)")
+	fs.StringVar(&cfg.QvisURL, "qvis-url", "", "URL for the Qvis visualization tool")
 	fs.StringVar(&cfg.ExcludeHeaders, "exclude-headers", "", "Drop platform-specific headers. Comma-separated list of headers key to drop, supporting wildcard matching.")
 	fs.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "Log format (text or json)")
 	fs.IntVar(&cfg.SrvMaxHeaderBytes, "srv-max-header-bytes", defaultSrvMaxHeaderBytes, "Value to use for the http.Server's MaxHeaderBytes option")
@@ -330,6 +335,9 @@ func loadConfig(args []string, getEnvVal func(string) string, getEnviron func() 
 	if cfg.QLogPublicPrefix == "" && getEnvVal("QLOG_PUBLIC_PREFIX") != "" {
 		cfg.QLogPublicPrefix = getEnvVal("QLOG_PUBLIC_PREFIX")
 	}
+	if cfg.QvisURL == "" && getEnvVal("QVIS_URL") != "" {
+		cfg.QvisURL = getEnvVal("QVIS_URL")
+	}
 	if cfg.EnableHTTP3 {
 		if cfg.TLSCertFile == "" || cfg.TLSKeyFile == "" {
 			// Disable HTTP3 if TLS is not configured
@@ -426,12 +434,12 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 
 	// Create connection stats tracker for HTTP/3
 	var statsTracker *ConnectionStatsTracker
-	
+
 	// Start HTTP/3 server if configured (on same port as HTTPS)
 	var http3Server *http3.Server
 	if cfg.EnableHTTP3 {
 		wg.Add(1)
-		
+
 		// Initialize the stats tracker
 		var err error
 		if cfg.QLogDir != "" {
@@ -447,10 +455,10 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 		} else {
 			statsTracker = NewConnectionStatsTracker()
 		}
-		
+
 		// Set the global stats provider so the httpbin handlers can access it
 		httpbin.SetHTTP3StatsProvider(statsTracker)
-		
+
 		http3Server = &http3.Server{
 			Addr:    srv.Addr,
 			Handler: srv.Handler,
@@ -458,12 +466,12 @@ func listenAndServeGracefully(srv *http.Server, cfg *config, logger *slog.Logger
 				Tracer: statsTracker.TracerForConnection,
 			},
 		}
-		
+
 		// Store the stats tracker in the server handler context
 		// so it can be accessed by request handlers
 		srv.Handler = withStatsTracker(srv.Handler, statsTracker)
 		http3Server.Handler = withStatsTracker(http3Server.Handler, statsTracker)
-		
+
 		go func() {
 			defer wg.Done()
 			logger.Info(fmt.Sprintf("go-httpbin listening on http3://%s", http3Server.Addr))

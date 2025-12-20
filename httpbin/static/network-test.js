@@ -295,7 +295,48 @@ function extractConnectionId(qlogUrl) {
  */
 function buildQvisLink(qlogUrl) {
     if (!qlogUrl) return null;
-    return 'https://qvis.quictools.info/#/sequence?file=' + encodeURIComponent(qlogUrl);
+
+    let qvisHost = 'qvis.quictools.info';
+
+    // Check for injected configuration from Helm/Go
+    if (window.QVIS_URL) {
+        // Handle full URL or just host
+        try {
+            if (window.QVIS_URL.startsWith('http')) {
+                const url = new URL(window.QVIS_URL);
+                qvisHost = url.host;
+            } else {
+                qvisHost = window.QVIS_URL;
+            }
+        } catch (e) {
+            console.error('Invalid QVIS_URL:', window.QVIS_URL);
+        }
+    }
+
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const override = params.get('qvis_override') || params.get('qvisOverride');
+
+        if (override) {
+            qvisHost = override;
+        } else if (!window.QVIS_URL) {
+            // Only try dynamic derivation if no explicit config
+            const hostname = window.location.hostname;
+            // Only try to modify hostname if it's not an IP and has enough parts
+            if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+                const parts = hostname.split('.');
+                if (parts.length >= 2) {
+                    qvisHost = `qvis.${parts.slice(-2).join('.')}`;
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error determining qvis host:', e);
+    }
+
+    // Ensure we don't duplicate protocol if already in host
+    const protocol = qvisHost.startsWith('http') ? '' : 'https://';
+    return `${protocol}${qvisHost}/#/sequence?file=` + encodeURIComponent(qlogUrl);
 }
 
 /**

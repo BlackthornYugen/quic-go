@@ -105,6 +105,9 @@ qlog:
   # Public URL prefix for qlog files (e.g., https://jsteelkw.ca/qlogs/)
   # If set, JSON responses will include qvis visualization links
   publicPrefix: ""
+  # Qvis visualization tool URL (e.g. https://qvis.quictools.info)
+  # If unset, the frontend will attempt to determine the URL dynamically
+  qvisUrl: ""
 
 # Volume mounts
 volumes: []

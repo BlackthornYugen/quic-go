@@ -89,6 +89,13 @@ Allowed redirect destinations:
 	}
 }
 
+// WithQvisURL sets the URL for the Qvis visualization tool
+func WithQvisURL(url string) OptionFunc {
+	return func(h *HTTPBin) {
+		h.QvisURL = url
+	}
+}
+
 // WithUnsafeAllowDangerousResponses means endpoints that allow clients to
 // specify a response Conntent-Type WILL NOT escape HTML entities in the
 // response body, which can enable (e.g.) reflected XSS attacks.

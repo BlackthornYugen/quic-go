@@ -97,6 +97,9 @@ type HTTPBin struct {
 	// Max number of SSE events to send, based on rough estimate of single
 	// event's size
 	maxSSECount int64
+
+	// QvisURL is the URL for the Qvis visualization tool
+	QvisURL string
 }
 
 // New creates a new HTTPBin instance
@@ -112,7 +115,13 @@ func New(opts ...OptionFunc) *HTTPBin {
 	}
 
 	// pre-compute some configuration values and pre-render templates
-	tmplData := struct{ Prefix string }{Prefix: h.prefix}
+	tmplData := struct {
+		Prefix  string
+		QvisURL string
+	}{
+		Prefix:  h.prefix,
+		QvisURL: h.QvisURL,
+	}
 	h.indexHTML = mustRenderTemplate("index.html.tmpl", tmplData)
 	h.formsPostHTML = mustRenderTemplate("forms-post.html.tmpl", tmplData)
 	h.statusSpecialCases = createSpecialCases(h.prefix)

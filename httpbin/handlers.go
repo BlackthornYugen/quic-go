@@ -56,7 +56,12 @@ func (h *HTTPBin) UTF8(w http.ResponseWriter, _ *http.Request) {
 
 // NetworkTest renders the network test page for testing parallel requests
 func (h *HTTPBin) NetworkTest(w http.ResponseWriter, _ *http.Request) {
-	writeHTML(w, mustStaticAsset("network-test.html"), http.StatusOK)
+	tmplData := struct {
+		QvisURL string
+	}{
+		QvisURL: h.QvisURL,
+	}
+	writeHTML(w, mustRenderTemplate("network-test.html.tmpl", tmplData), http.StatusOK)
 }
 
 // Get handles HTTP GET requests

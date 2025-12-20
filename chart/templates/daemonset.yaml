@@ -34,12 +34,20 @@ spec:
         args:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if .Values.env }}
         env:
+        {{- if .Values.env }}
         {{- range .Values.env }}
         - name: {{ .name }}
           value: {{ .value | quote }}
         {{- end }}
+        {{- end }}
+        {{- if .Values.qlog.publicPrefix }}
+        - name: QLOG_PUBLIC_PREFIX
+          value: {{ .Values.qlog.publicPrefix | quote }}
+        {{- end }}
+        {{- if .Values.qlog.qvisUrl }}
+        - name: QVIS_URL
+          value: {{ .Values.qlog.qvisUrl | quote }}
         {{- end }}
         ports:
         - name: http
